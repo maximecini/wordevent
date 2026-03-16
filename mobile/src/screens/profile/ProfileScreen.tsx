@@ -1,26 +1,40 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuthStore } from '../../store/auth.store';
 
 /** Écran profil — affiche les infos de l'utilisateur connecté et permet la déconnexion. */
 export function ProfileScreen() {
   const { user, logout } = useAuthStore();
+  const initial = user?.name?.[0]?.toUpperCase() ?? '?';
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>{initial}</Text>
+      </View>
       <Text style={styles.name}>{user?.name}</Text>
       <Text style={styles.email}>{user?.email}</Text>
-      <TouchableOpacity style={styles.button} onPress={logout}>
-        <Text style={styles.buttonText}>Se déconnecter</Text>
+      <Text style={styles.role}>{user?.role}</Text>
+      <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+        <Text style={styles.logoutText}>Se déconnecter</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  name: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
-  email: { fontSize: 16, color: '#666', marginBottom: 32 },
-  button: { backgroundColor: '#000', borderRadius: 8, padding: 14, width: '100%', alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: '600' },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#F8FAFC' },
+  avatar: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  avatarText: { color: '#fff', fontSize: 32, fontWeight: '700' },
+  name: { fontSize: 22, fontWeight: '700', color: '#0F172A', marginBottom: 4 },
+  email: { fontSize: 15, color: '#64748B', marginBottom: 4 },
+  role: { fontSize: 13, color: '#94A3B8', marginBottom: 40 },
+  logoutBtn: {
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    borderRadius: 12, paddingVertical: 14, paddingHorizontal: 32,
+  },
+  logoutText: { color: '#DC2626', fontWeight: '600', fontSize: 15 },
 });

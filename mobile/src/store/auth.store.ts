@@ -20,9 +20,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   /** Stocke les tokens dans SecureStore et charge le profil utilisateur. */
   login: async (tokens: AuthTokens) => {
+    console.log('[AuthStore.login] tokens reçus :', { accessToken: !!tokens.accessToken, refreshToken: !!tokens.refreshToken });
     await SecureStore.setItemAsync('accessToken', tokens.accessToken);
     await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
+    console.log('[AuthStore.login] tokens sauvegardés → appel getMe()');
     const user = await getMe();
+    console.log('[AuthStore.login] getMe() réponse :', user);
     set({ user, accessToken: tokens.accessToken, isAuthenticated: true });
   },
 

@@ -26,6 +26,12 @@ export async function loginApple(identityToken: string, fullName?: string): Prom
   return data;
 }
 
+/** Connecte ou crée un compte via un accessToken Facebook. */
+export async function loginFacebook(accessToken: string): Promise<AuthTokens> {
+  const { data } = await apiClient.post<AuthTokens>('/auth/facebook', { accessToken });
+  return data;
+}
+
 /** Retourne le profil de l'utilisateur connecté. */
 export async function getMe(): Promise<User> {
   const { data } = await apiClient.get<User>('/auth/me');

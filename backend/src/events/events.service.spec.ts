@@ -8,6 +8,7 @@ import { Role } from '@prisma/client';
 import { EventsService } from './events.service';
 import { EventsCrudService } from './services/events-crud.service';
 import { EventsGeoService } from './services/events-geo.service';
+import { EventsGateway } from './events.gateway';
 import { EventVisibility } from '@prisma/client';
 import { EventResponse } from './events.types';
 
@@ -24,6 +25,7 @@ const mockCrud = {
   update: jest.fn(), remove: jest.fn(),
 };
 const mockGeo = { findNearby: jest.fn() };
+const mockGateway = { emitCreated: jest.fn(), emitUpdated: jest.fn(), emitDeleted: jest.fn() };
 
 let service: EventsService;
 
@@ -34,6 +36,7 @@ function setupBeforeEach() {
         EventsService,
         { provide: EventsCrudService, useValue: mockCrud },
         { provide: EventsGeoService, useValue: mockGeo },
+        { provide: EventsGateway, useValue: mockGateway },
       ],
     }).compile();
 

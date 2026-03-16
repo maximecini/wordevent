@@ -10,6 +10,7 @@
 | POST | /auth/login | ❌ | Connexion |
 | POST | /auth/google | ❌ | Google OAuth |
 | POST | /auth/apple | ❌ | Apple Sign In |
+| POST | /auth/facebook | ❌ | Facebook OAuth |
 | POST | /auth/refresh | ❌ | Refresh token |
 | GET | /auth/me | ✅ | Profil connecté |
 
@@ -18,6 +19,7 @@
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
 | GET | /users | 🔑 ADMIN | Liste tous les users |
+| GET | /users/search?email= | ✅ | Rechercher un user par email (profil public) |
 | GET | /users/:id | ✅ | Profil d'un user |
 | PATCH | /users/:id | ✅ | Modifier son profil |
 | DELETE | /users/:id | 🔑 ADMIN | Supprimer un user |
@@ -47,6 +49,37 @@
 | POST | /events/:id/invite | ✅ | Inviter un user |
 | PATCH | /invitations/:id | ✅ | Accepter/refuser |
 | GET | /invitations | ✅ | Mes invitations reçues |
+
+## Messages (chat d'événement)
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| GET | /events/:id/messages | ✅ | Historique paginé (participant uniquement) |
+
+### WebSocket — namespace `/chat`
+
+| Événement | Direction | Payload | Description |
+|-----------|-----------|---------|-------------|
+| `chat:join` | Client → Serveur | `eventId: string` | Rejoindre la room d'un event |
+| `chat:leave` | Client → Serveur | `eventId: string` | Quitter la room |
+| `chat:send` | Client → Serveur | `{ eventId, content }` | Envoyer un message |
+| `chat:message` | Serveur → Client | `MessageResponse` | Diffusion d'un nouveau message |
+
+### WebSocket — namespace `/events`
+
+| Événement | Direction | Payload | Description |
+|-----------|-----------|---------|-------------|
+| `invitation:received` | Serveur → Client | `InvitationResponse` | Invitation reçue en temps réel |
+
+## Places of Interest (POIs personnels)
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| GET | /places | ✅ | Mes POIs autour de moi (lat/lng/radius) |
+| POST | /places | ✅ | Créer un POI |
+| GET | /places/:id | ✅ | Détail d'un POI (propriétaire uniquement) |
+| PATCH | /places/:id | ✅ | Modifier un POI |
+| DELETE | /places/:id | ✅ | Supprimer un POI |
 
 ---
 ✅ = JWT requis | 🔑 = ADMIN uniquement | ❌ = public

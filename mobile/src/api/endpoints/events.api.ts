@@ -1,45 +1,32 @@
 import { apiClient } from '../client';
+import { CreateEventPayload, EventResponse } from '../../types/event.types';
 
-export interface EventResponse {
-  id: string;
-  title: string;
-  description: string | null;
-  lat: number;
-  lng: number;
-  capacity: number;
-  participantCount: number;
-  visibility: 'PUBLIC' | 'PRIVATE';
-  startAt: string;
-  endAt: string;
-  creatorId: string;
-  createdAt: string;
-}
-
-export interface CreateEventPayload {
-  title: string;
-  description?: string;
-  lat: number;
-  lng: number;
-  capacity: number;
-  visibility?: 'PUBLIC' | 'PRIVATE';
-  startAt: string;
-  endAt: string;
-}
-
-/** Retourne les événements actifs autour des coordonnées données. */
-export async function fetchNearbyEvents(lat: number, lng: number, radius = 5000): Promise<EventResponse[]> {
-  const { data } = await apiClient.get<EventResponse[]>('/events', { params: { lat, lng, radius } });
-  return data;
-}
-
-/** Crée un nouvel événement. */
+/**
+ * Crée un nouvel événement.
+ *
+ * @param payload - Données de l'événement à créer
+ * @returns L'événement créé
+ */
 export async function createEvent(payload: CreateEventPayload): Promise<EventResponse> {
   const { data } = await apiClient.post<EventResponse>('/events', payload);
   return data;
 }
 
-/** Retourne le détail d'un événement. */
-export async function fetchEventById(id: string): Promise<EventResponse> {
-  const { data } = await apiClient.get<EventResponse>(`/events/${id}`);
+/**
+ * Récupère les événements dans un rayon autour d'une position.
+ *
+ * @param lat - Latitude du centre de recherche
+ * @param lng - Longitude du centre de recherche
+ * @param radius - Rayon de recherche en mètres
+ * @returns Liste des événements dans le rayon
+ */
+export async function fetchNearbyEvents(
+  lat: number,
+  lng: number,
+  radius: number,
+): Promise<EventResponse[]> {
+  const { data } = await apiClient.get<EventResponse[]>('/events', {
+    params: { lat, lng, radius },
+  });
   return data;
 }

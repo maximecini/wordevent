@@ -52,6 +52,18 @@ make fclean       # supprimer tout + images
 make re           # rebuild complet
 ```
 
+## Variables d'environnement mobile
+
+Créer `mobile/.env` à partir de `mobile/.env` (fichier versionné avec valeurs vides) :
+
+| Variable | Description | Exemple |
+|----------|-------------|---------|
+| EXPO_PUBLIC_API_URL | URL de l'API backend (via Nginx) | http://192.168.1.x:4443/api |
+| EXPO_PUBLIC_GOOGLE_MAPS_API_KEY | Clé API Google Maps (Android/iOS) | AIzaSy... |
+
+> **Note** : Pour tester sur téléphone physique, remplacer `localhost` par l'IP de la machine hôte.
+> Pour un tunnel Expo Go : lancer `docker attach wordevent-mobile-1`, appuyer sur `t`.
+
 ## Base de données
 
 ```bash

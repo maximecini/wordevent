@@ -7,6 +7,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ParticipationsService } from './participations.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsGateway } from '../events/events.gateway';
+import { MessagesGateway } from '../messages/messages.gateway';
 
 const mockPublicEvent = { id: 'evt-1', capacity: 2, visibility: 'PUBLIC', creatorId: 'creator-1' };
 const mockPrivateEvent = { id: 'evt-2', capacity: 2, visibility: 'PRIVATE', creatorId: 'creator-1' };
@@ -16,6 +18,8 @@ const mockPrisma = {
   participation: { create: jest.fn(), count: jest.fn(), delete: jest.fn(), findMany: jest.fn() },
   invitation: { findFirst: jest.fn() },
 };
+const mockGateway = { emitJoined: jest.fn(), emitLeft: jest.fn() };
+const mockMessagesGateway = { kickFromChat: jest.fn() };
 
 let service: ParticipationsService;
 
@@ -25,6 +29,8 @@ function setupBeforeEach() {
       providers: [
         ParticipationsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: EventsGateway, useValue: mockGateway },
+        { provide: MessagesGateway, useValue: mockMessagesGateway },
       ],
     }).compile();
 
@@ -80,6 +86,7 @@ function describeLeave() {
 
       await service.leave('user-1', 'evt-1');
       expect(mockPrisma.participation.delete).toHaveBeenCalled();
+      expect(mockMessagesGateway.kickFromChat).toHaveBeenCalledWith('user-1', 'evt-1');
     });
 
     /** Lève ForbiddenException si le créateur tente de quitter */

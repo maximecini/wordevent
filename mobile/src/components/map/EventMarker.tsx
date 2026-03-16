@@ -1,50 +1,60 @@
-import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
-import { EventResponse } from '../../api/endpoints/events.api';
+import React, { useCallback } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Marker } from 'react-native-maps';
+import { EventResponse } from '../../types/event.types';
 
-interface Props {
+type Props = {
   event: EventResponse;
-  onPress: (event: EventResponse) => void;
-}
-
-const COLORS = {
-  PUBLIC: { bg: '#3B82F6', shadow: '#3B82F680' },
-  PRIVATE: { bg: '#6366F1', shadow: '#6366F180' },
+  onSelect: (event: EventResponse) => void;
 };
 
-/**
- * Marqueur d'événement sur la carte.
- * Affiche le nombre de participants dans un carré coloré selon la visibilité.
- */
-export function EventMarker({ event, onPress }: Props) {
-  const colors = COLORS[event.visibility];
+function formatTime(isoDate: string): string {
+  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Marqueur individuel pour un événement sur la carte. */
+export function EventMarker({ event, onSelect }: Props) {
+  const isPrivate = event.visibility === 'PRIVATE';
   const isFull = event.participantCount >= event.capacity;
 
+  const handlePress = useCallback(() => onSelect(event), [event, onSelect]);
+
+  const dotColor = isPrivate ? '#7C3AED' : '#2563EB';
+  const labelColor = isFull ? '#94A3B8' : dotColor;
+
   return (
-    <TouchableOpacity
-      style={[styles.marker, { backgroundColor: isFull ? '#94A3B8' : colors.bg }]}
-      onPress={() => onPress(event)}
-      activeOpacity={0.85}
+    <Marker
+      coordinate={{ latitude: event.lat, longitude: event.lng }}
+      onPress={handlePress}
+      tracksViewChanges={false}
     >
-      <Text style={styles.count}>{event.participantCount}</Text>
-      {event.visibility === 'PRIVATE' && (
-        <View style={styles.lockDot} />
-      )}
-    </TouchableOpacity>
+      <View style={styles.wrapper}>
+        <View style={[styles.bubble, { borderColor: dotColor }]}>
+          <Text style={[styles.title]} numberOfLines={1}>{event.title}</Text>
+          <Text style={[styles.time, { color: labelColor }]}>{formatTime(event.startAt)}</Text>
+        </View>
+        <View style={[styles.dot, { backgroundColor: dotColor }]} />
+      </View>
+    </Marker>
   );
 }
 
 const styles = StyleSheet.create({
-  marker: {
-    width: 44, height: 44, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25, shadowRadius: 8, elevation: 6,
+  wrapper: { alignItems: 'center' },
+  bubble: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    maxWidth: 130,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  count: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  lockDot: {
-    position: 'absolute', top: -4, right: -4,
-    width: 10, height: 10, borderRadius: 5,
-    backgroundColor: '#F59E0B', borderWidth: 2, borderColor: '#fff',
-  },
+  title: { fontSize: 12, fontWeight: '700', color: '#0F172A' },
+  time: { fontSize: 11, fontWeight: '500', marginTop: 1 },
+  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 3 },
 });

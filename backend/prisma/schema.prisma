@@ -18,6 +18,7 @@ enum Provider {
   LOCAL
   GOOGLE
   APPLE
+  FACEBOOK
 }
 
 enum EventVisibility {

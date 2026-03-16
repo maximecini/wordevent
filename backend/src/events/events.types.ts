@@ -14,6 +14,7 @@ export interface RawEvent {
   lat: unknown;
   lng: unknown;
   participantCount?: unknown;
+  isParticipant?: unknown;
 }
 
 /** Réponse sérialisée d'un event avec coordonnées typées. */
@@ -25,6 +26,7 @@ export interface EventResponse {
   lng: number;
   capacity: number;
   participantCount: number;
+  isParticipant: boolean;
   visibility: EventVisibility;
   startAt: Date;
   endAt: Date;
@@ -42,6 +44,7 @@ export function serializeEvent(raw: RawEvent): EventResponse {
     lng: Number(raw.lng),
     capacity: raw.capacity,
     participantCount: Number(raw.participantCount ?? 0),
+    isParticipant: Boolean(raw.isParticipant),
     visibility: raw.visibility,
     startAt: raw.startAt,
     endAt: raw.endAt,

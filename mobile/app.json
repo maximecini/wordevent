@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "wordevent",
+    "slug": "wordevent",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,9 +12,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rciniha.wordevent"
     },
     "android": {
+      "package": "com.rciniha.wordevent",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -26,13 +28,13 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "newArchEnabled": false,
     "plugins": [
       "expo-secure-store",
       "expo-location",
-      [
-        "react-native-maps",
-        { "googleMapsApiKey": "$EXPO_PUBLIC_GOOGLE_MAPS_API_KEY" }
-      ]
-    ]
+      "expo-apple-authentication",
+      "expo-asset"
+    ],
+    "scheme": "wordevent"
   }
 }

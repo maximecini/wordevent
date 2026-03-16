@@ -1,9 +1,15 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsGateway } from '../events/events.gateway';
+import { MessagesGateway } from '../messages/messages.gateway';
 
 @Injectable()
 export class ParticipationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gateway: EventsGateway,
+    private readonly messagesGateway: MessagesGateway,
+  ) {}
 
   /**
    * Permet à un utilisateur de rejoindre un événement.
@@ -19,6 +25,8 @@ export class ParticipationsService {
     await this.checkPrivateAccess(userId, eventId, event.visibility);
     await this.checkCapacity(eventId, event.capacity);
     await this.prisma.participation.create({ data: { userId, eventId } });
+    const count = await this.prisma.participation.count({ where: { eventId } });
+    this.gateway.emitJoined(eventId, count);
   }
 
   private async getEventOrThrow(eventId: string) {
@@ -57,6 +65,9 @@ export class ParticipationsService {
     await this.prisma.participation.delete({
       where: { userId_eventId: { userId, eventId } },
     });
+    const count = await this.prisma.participation.count({ where: { eventId } });
+    this.gateway.emitLeft(eventId, count);
+    this.messagesGateway.kickFromChat(userId, eventId);
   }
 
   /**

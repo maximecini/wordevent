@@ -121,11 +121,22 @@ cd backend && npm run start:dev
 
 # mobile
 cd mobile && npx expo start
+
+# Docker — lancer tous les services
+docker compose up
+
+# Connexion téléphone via WiFi (même réseau)
+# 1. Vérifier que LOCAL_IP=10.16.3.1 dans .env correspond à l'IP de la machine
+# 2. Lancer les services
+docker compose up
+# 3. Scanner le QR code affiché par Expo Go directement
 ```
 
 ## Sécurité — Règle fondamentale
 
 **Tout ce qui vient du front doit être vérifié côté back.** Sans exception.
+
+> **Règle absolue** : quand Claude vérifie une logique ou une condition côté front (mobile), il doit **toujours** vérifier que la même logique est appliquée côté back (NestJS). Ne jamais faire confiance à l'utilisateur. Le front peut être contourné, manipulé, ou modifié — seul le backend fait autorité.
 
 | Ce qui vient du front | Ce qu'on vérifie côté back |
 |-----------------------|---------------------------|
@@ -146,6 +157,17 @@ cd mobile && npx expo start
 - Pusher sur le remote sans confirmation
 - Sur-ingéniérer — garder les solutions simples
 - Créer des fichiers inutiles
+- **Commencer à coder sans avoir présenté un plan précis et reçu la validation explicite de rcini-ha**
+
+## Règle obligatoire avant tout code
+
+> **Avant d'écrire la moindre ligne de code, Claude doit toujours :**
+> 1. Établir un plan précis (fichiers à créer/modifier, logique, ordre des étapes)
+> 2. Présenter ce plan à rcini-ha
+> 3. Attendre sa validation explicite ("ok", "go", "c'est bon"…)
+> 4. Seulement ensuite commencer l'implémentation
+
+**Pas de code sans validation du plan. Sans exception.**
 
 ## Documentation
 
@@ -203,22 +225,6 @@ pandoc docs/*.md -o wordevent-doc.pdf
 - `CLAUDE.md` — ce fichier
 - `docs/` — documentation technique maintenue par Claude
 - `memory/` — mémoire persistante de Claude
-- `ux/` — designs et maquettes fournis par le créateur
-
-## UX / Design
-
-### Dossier `ux/`
-Le dossier `ux/` contient les références visuelles à respecter lors du développement mobile :
-
-| Fichier | Contenu |
-|---------|---------|
-| `ux/design/` | Design global de l'application (couleurs, typo, composants) |
-| `ux/filtre/` | Design du système de filtres de la carte |
-
-### Règle obligatoire
-- **Toujours lire `ux/` avant de coder un écran ou composant mobile**
-- Respecter les couleurs, espacements et composants définis dans les maquettes
-- Ne jamais inventer un design — si aucune maquette n'existe pour un élément, demander au créateur
 
 ## Infrastructure Docker
 
@@ -443,6 +449,89 @@ mobile/src/
     ├── geo.utils.ts               # Calculs distance, format coords
     └── date.utils.ts
 ```
+
+### Règles composants React Native — OBLIGATOIRES
+
+#### 1. Responsabilité unique
+**1 composant = 1 rôle.** Si tu dois mettre "et" dans la description → trop gros, découper.
+```
+❌ EventCardWithModalAndActions
+✅ EventCard  +  EventModal  +  EventActions
+```
+
+#### 2. Props typées — toujours
+Toujours un `type Props` explicite en haut du fichier, jamais de `any` :
+```tsx
+type Props = {
+  label: string;
+  onPress: () => void;
+  onClose?: () => void;  // optionnel avec ?
+};
+export function MyComponent({ label, onPress, onClose }: Props) { ... }
+```
+
+#### 3. Pas de logique dans le JSX
+Calculs, filtres, conditions → hors du `return` :
+```tsx
+// ❌
+return <Text>{items.filter(i => i.active).length > 0 ? 'oui' : 'non'}</Text>
+// ✅
+const hasActive = items.some(i => i.active);
+return <Text>{hasActive ? 'oui' : 'non'}</Text>
+```
+
+#### 4. Les hooks restent dans les screens
+Les composants reçoivent des **données via props**, ils ne fetchent pas eux-mêmes.
+- **Screen** → lit le store, fetche, passe les données en props
+- **Composant** → reçoit des props, affiche, émet des callbacks
+
+Exceptions acceptées : `useState` pour état UI local (toggle, animation), `useRef`.
+
+#### 5. Callbacks stables
+```tsx
+// ❌ fonction recréée à chaque render
+onPress={() => handleSelect(item)}
+// ✅
+const handlePress = useCallback(() => handleSelect(item), [item]);
+```
+
+#### 6. `useMemo` pour les calculs lourds
+```tsx
+const visibleItems = useMemo(() => items.filter(i => i.active), [items]);
+```
+
+#### 7. Composant complexe → sous-dossier
+Quand un composant a besoin de sous-composants propres :
+```
+components/map/event-detail/
+├── EventDetailSheet.tsx    # orchestrateur — exporte le composant principal
+├── EventDetailHeader.tsx
+└── EventDetailActions.tsx
+```
+
+#### 8. Séparation logique — 1 logique = 1 fichier
+Chaque responsabilité dans son propre fichier, **sans exception** :
+
+| Responsabilité | Fichier |
+|---------------|---------|
+| Appels API | `api/endpoints/xxx.api.ts` |
+| État global | `store/xxx.store.ts` |
+| Logique réutilisable | `hooks/useXxx.ts` |
+| Calculs / transformations | `utils/xxx.utils.ts` |
+| Types TypeScript | `types/xxx.types.ts` |
+| Affichage | `components/xxx/Xxx.tsx` |
+| Orchestration (screen) | `screens/xxx/XxxScreen.tsx` |
+
+**Jamais de fetch dans un composant.** Jamais de calcul métier dans un screen. Jamais de style inline complexe — utiliser `StyleSheet.create`.
+
+#### Checklist avant chaque composant
+- [ ] Il fait **une seule chose**
+- [ ] Il a un **type Props** explicite
+- [ ] Pas de fetch/store dedans (sauf screen)
+- [ ] Moins de **200 lignes**
+- [ ] Callbacks dans `useCallback`
+- [ ] Pas de logique dans le `return`
+- [ ] Sa logique réutilisable est dans un `hook` ou `util` séparé
 
 ### Règle nommage
 - Fichiers backend : `kebab-case` (ex: `jwt-auth.guard.ts`)

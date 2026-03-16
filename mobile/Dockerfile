@@ -1,12 +1,12 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-RUN npm install -g expo-cli @expo/ngrok@^4.1.0
+RUN npm install -g expo-cli
 
 COPY package*.json ./
 RUN npm install
 
 COPY . .
 
-CMD ["npx", "expo", "start", "--tunnel"]
+CMD ["sh", "-c", "npm install && npx expo start --go --lan"]

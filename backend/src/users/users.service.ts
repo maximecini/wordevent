@@ -71,6 +71,43 @@ export class UsersService {
   }
 
   /**
+   * Recherche un utilisateur par email pour l'invitation (profil public uniquement).
+   *
+   * @param email - Email à rechercher
+   * @returns Profil public ou null si introuvable
+   */
+  async searchByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, name: true, avatar: true },
+    });
+  }
+
+  /**
+   * Retourne la liste de tous les utilisateurs (usage admin).
+   *
+   * @returns Liste de profils publics (sans password ni refreshToken)
+   */
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: { id: true, email: true, name: true, avatar: true, role: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Supprime un utilisateur par son identifiant (usage admin).
+   *
+   * @param id - UUID de l'utilisateur à supprimer
+   * @throws NotFoundException si l'utilisateur n'existe pas
+   */
+  async remove(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+    await this.prisma.user.delete({ where: { id } });
+  }
+
+  /**
    * Met à jour le refresh token hashé de l'utilisateur.
    *
    * @param id - UUID de l'utilisateur

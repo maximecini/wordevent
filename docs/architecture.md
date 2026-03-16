@@ -62,6 +62,20 @@
 | joinedAt | DateTime | Date de participation |
 > Contrainte unique : un user ne peut rejoindre un event qu'une fois
 
+### PlaceOfInterest
+| Champ | Type | Description |
+|-------|------|-------------|
+| id | UUID | Clé primaire |
+| name | String | Nom du lieu |
+| description | String? | Description optionnelle |
+| icon | String? | Emoji ou identifiant icône |
+| userId | UUID → User | Propriétaire |
+| location | geometry(Point, 4326) | Position PostGIS |
+| createdAt | DateTime | Date de création |
+| updatedAt | DateTime | Dernière modification |
+
+> Les POIs sont privés — uniquement visibles par leur propriétaire.
+
 ### Invitation (events privés)
 | Champ | Type | Description |
 |-------|------|-------------|
@@ -88,4 +102,5 @@
 - **EventsModule** — CRUD events, géospatial, Socket.IO
 - **ParticipationsModule** — rejoindre/quitter un event
 - **InvitationsModule** — invitations events privés
+- **PlacesOfInterestModule** — CRUD POIs personnels, requêtes géospatiales par rayon
 - **PrismaModule** — service DB partagé

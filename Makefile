@@ -34,4 +34,10 @@ fclean:
 
 re: fclean all
 
-.PHONY: all up down restart logs logs-backend logs-db logs-mobile ps clean fclean re
+seed:
+	docker compose exec backend npx prisma db seed
+
+migrate:
+	docker compose exec backend npx prisma migrate deploy
+
+.PHONY: all up down restart logs logs-backend logs-db logs-mobile ps clean fclean re seed migrate

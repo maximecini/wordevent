@@ -20,17 +20,31 @@ export function useLocation() {
     let sub: Location.LocationSubscription | null = null;
 
     async function start() {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') { setReady(true); return; }
+      try {
+        console.log('[useLocation] demande permission GPS...');
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        console.log('[useLocation] permission GPS:', status);
+        if (status !== 'granted') { setReady(true); return; }
 
-      const loc = await Location.getCurrentPositionAsync({});
-      setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude });
-      setReady(true);
+        // Position instantanée depuis le cache système (< 100ms)
+        const last = await Location.getLastKnownPositionAsync({});
+        if (last) {
+          console.log('[useLocation] position cache:', last.coords.latitude, last.coords.longitude);
+          setCoords({ lat: last.coords.latitude, lng: last.coords.longitude });
+        } else {
+          console.warn('[useLocation] pas de position en cache, utilise Paris par défaut');
+        }
+        console.log('[useLocation] ready=true');
 
-      sub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, distanceInterval: 30 },
-        (l) => setCoords({ lat: l.coords.latitude, lng: l.coords.longitude }),
-      );
+        sub = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.Balanced, distanceInterval: 30 },
+          (l) => setCoords({ lat: l.coords.latitude, lng: l.coords.longitude }),
+        );
+      } catch (e) {
+        console.error('[useLocation] erreur GPS, fallback Paris:', e);
+      } finally {
+        setReady(true);
+      }
     }
 
     start();

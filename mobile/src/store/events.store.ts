@@ -1,29 +1,47 @@
 import { create } from 'zustand';
-import { EventResponse, fetchNearbyEvents } from '../api/endpoints/events.api';
-import { joinEvent, leaveEvent } from '../api/endpoints/participations.api';
+import { createEvent, fetchNearbyEvents } from '../api/endpoints/events.api';
+import { CreateEventPayload, EventResponse, EventVisibility } from '../types/event.types';
 
-type VisibilityFilter = 'PUBLIC' | 'PRIVATE' | null;
+export type VisibilityFilter = 'ALL' | EventVisibility;
+
+export const RADIUS_OPTIONS = [500, 1000, 5000, 10000] as const;
+export type RadiusOption = typeof RADIUS_OPTIONS[number];
 
 interface EventsState {
   events: EventResponse[];
-  selectedEvent: EventResponse | null;
-  activeFilter: VisibilityFilter;
+  creating: boolean;
   loading: boolean;
-  fetchNearby: (lat: number, lng: number, radius?: number) => Promise<void>;
-  setSelectedEvent: (event: EventResponse | null) => void;
-  setActiveFilter: (filter: VisibilityFilter) => void;
-  join: (eventId: string) => Promise<void>;
-  leave: (eventId: string) => Promise<void>;
+  activeRadius: RadiusOption;
+  visibilityFilter: VisibilityFilter;
+  setRadius: (radius: RadiusOption) => void;
+  setVisibilityFilter: (filter: VisibilityFilter) => void;
+  addEvent: (payload: CreateEventPayload) => Promise<void>;
+  fetchNearby: (lat: number, lng: number, radius: number) => Promise<void>;
+  upsertEvent: (event: EventResponse) => void;
+  removeEvent: (id: string) => void;
 }
 
-export const useEventsStore = create<EventsState>((set, get) => ({
+export const useEventsStore = create<EventsState>((set) => ({
   events: [],
-  selectedEvent: null,
-  activeFilter: null,
+  creating: false,
   loading: false,
+  activeRadius: 5000,
+  visibilityFilter: 'ALL',
 
-  /** Charge les événements autour d'une position géographique. */
-  fetchNearby: async (lat, lng, radius = 5000) => {
+  setRadius: (activeRadius) => set({ activeRadius }),
+  setVisibilityFilter: (visibilityFilter) => set({ visibilityFilter }),
+
+  addEvent: async (payload) => {
+    set({ creating: true });
+    try {
+      const event = await createEvent(payload);
+      set((s) => ({ events: [event, ...s.events] }));
+    } finally {
+      set({ creating: false });
+    }
+  },
+
+  fetchNearby: async (lat, lng, radius) => {
     set({ loading: true });
     try {
       const events = await fetchNearbyEvents(lat, lng, radius);
@@ -33,29 +51,16 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     }
   },
 
-  /** Sélectionne ou désélectionne un événement pour afficher son détail. */
-  setSelectedEvent: (event) => set({ selectedEvent: event }),
+  upsertEvent: (event) =>
+    set((s) => {
+      const exists = s.events.some((e) => e.id === event.id);
+      return {
+        events: exists
+          ? s.events.map((e) => (e.id === event.id ? event : e))
+          : [event, ...s.events],
+      };
+    }),
 
-  /** Applique un filtre de visibilité sur les marqueurs de la carte. */
-  setActiveFilter: (filter) => set({ activeFilter: filter }),
-
-  /** Rejoint un événement et incrémente le compteur local. */
-  join: async (eventId) => {
-    await joinEvent(eventId);
-    set((s) => ({
-      events: s.events.map((e) =>
-        e.id === eventId ? { ...e, participantCount: e.participantCount + 1 } : e,
-      ),
-    }));
-  },
-
-  /** Quitte un événement et décrémente le compteur local. */
-  leave: async (eventId) => {
-    await leaveEvent(eventId);
-    set((s) => ({
-      events: s.events.map((e) =>
-        e.id === eventId ? { ...e, participantCount: e.participantCount - 1 } : e,
-      ),
-    }));
-  },
+  removeEvent: (id) =>
+    set((s) => ({ events: s.events.filter((e) => e.id !== id) })),
 }));

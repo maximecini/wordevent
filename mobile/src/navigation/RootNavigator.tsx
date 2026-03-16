@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 import { useAuthStore } from '../store/auth.store';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
@@ -23,8 +24,11 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
-    </NavigationContainer>
+    <>
+      <NavigationContainer>
+        {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
+      </NavigationContainer>
+      <Toast />
+    </>
   );
 }

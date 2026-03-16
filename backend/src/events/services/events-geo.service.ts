@@ -20,11 +20,12 @@ export class EventsGeoService {
    */
   async findNearby(userId: string, dto: FindNearbyDto): Promise<EventResponse[]> {
     const radius = dto.radius ?? DEFAULT_RADIUS;
-    const rows = await this.prisma.$queryRawUnsafe<RawEvent[]>(
+    const rows = (await this.prisma.$queryRawUnsafe(
       `SELECT
          id, title, description, capacity, visibility, "startAt", "endAt", "creatorId", "createdAt",
          ST_Y(location) as lat, ST_X(location) as lng,
-         (SELECT COUNT(*) FROM participations WHERE "eventId" = events.id) as "participantCount"
+         (SELECT COUNT(*) FROM participations WHERE "eventId" = events.id) as "participantCount",
+         EXISTS(SELECT 1 FROM participations WHERE "eventId" = events.id AND "userId" = $4) as "isParticipant"
        FROM events
        WHERE ST_DWithin(location::geography, ST_MakePoint($1, $2)::geography, $3)
          AND "endAt" > now()
@@ -39,7 +40,7 @@ export class EventsGeoService {
        ORDER BY location <-> ST_MakePoint($1, $2)::geography
        LIMIT 100`,
       dto.lng, dto.lat, radius, userId,
-    );
+    )) as RawEvent[];
     return rows.map(serializeEvent);
   }
 }

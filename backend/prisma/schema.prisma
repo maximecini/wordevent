@@ -1,0 +1,139 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Provider {
+  LOCAL
+  GOOGLE
+  APPLE
+}
+
+enum EventVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String?
+  name       String
+  avatar     String?
+  role       Role     @default(USER)
+  provider   Provider @default(LOCAL)
+  providerId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  events              Event[]
+  participations      Participation[]
+  sentInvitations     Invitation[]       @relation("InvitedBy")
+  receivedInvitations Invitation[]       @relation("InvitedUser")
+  messages            Message[]
+  placesOfInterest    PlaceOfInterest[]
+  refreshToken        String?
+
+  @@map("users")
+}
+
+model Event {
+  id          String          @id @default(uuid())
+  title       String
+  description String?
+  location    Unsupported("geometry(Point, 4326)") // PostGIS Point — ST_DWithin, ST_Distance
+  capacity    Int
+  visibility  EventVisibility @default(PUBLIC)
+  startAt     DateTime
+  endAt       DateTime
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  creator        User            @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId      String
+  participations Participation[]
+  invitations    Invitation[]
+  messages       Message[]
+
+  @@index([creatorId])
+  @@map("events")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId String
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@map("messages")
+}
+
+model PlaceOfInterest {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  location    Unsupported("geometry(Point, 4326)")
+  icon        String?
+  createdAt   DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("places_of_interest")
+}
+
+model Participation {
+  id       String   @id @default(uuid())
+  joinedAt DateTime @default(now())
+
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@map("participations")
+}
+
+model Invitation {
+  id        String           @id @default(uuid())
+  status    InvitationStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+
+  event         Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId       String
+  invitedBy     User   @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  invitedById   String
+  invitedUser   User   @relation("InvitedUser", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedUserId String
+
+  @@unique([eventId, invitedUserId])
+  @@index([invitedUserId])
+  @@map("invitations")
+}

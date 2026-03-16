@@ -7,7 +7,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { RADIUS_OPTIONS, RadiusOption, VisibilityFilter, useEventsStore } from '../../store/events.store';
+import { VisibilityFilter, useEventsStore } from '../../store/events.store';
 
 type Props = {
   visible: boolean;
@@ -19,19 +19,16 @@ function formatRadius(m: number) {
 }
 
 const VISIBILITY_OPTIONS: { label: string; sub: string; value: VisibilityFilter }[] = [
-  { label: 'Tous', sub: 'Events publics et privés', value: 'ALL' },
-  { label: 'Public', sub: 'Visibles par tous', value: 'PUBLIC' },
-  { label: 'Privé', sub: 'Sur invitation uniquement', value: 'PRIVATE' },
+  { label: 'Tous',   sub: 'Events publics et privés',    value: 'ALL' },
+  { label: 'Public', sub: 'Visibles par tous',           value: 'PUBLIC' },
+  { label: 'Privé',  sub: 'Sur invitation uniquement',   value: 'PRIVATE' },
 ];
 
 /** Sheet de filtres avancés — ouvert depuis la FilterBar. */
 export function FilterSheet({ visible, onClose }: Props) {
-  const activeRadius = useEventsStore((s) => s.activeRadius);
   const visibilityFilter = useEventsStore((s) => s.visibilityFilter);
-  const setRadius = useEventsStore((s) => s.setRadius);
   const setVisibilityFilter = useEventsStore((s) => s.setVisibilityFilter);
 
-  const handleRadius = useCallback((r: RadiusOption) => setRadius(r), [setRadius]);
   const handleVisibility = useCallback((v: VisibilityFilter) => setVisibilityFilter(v), [setVisibilityFilter]);
 
   return (
@@ -42,21 +39,6 @@ export function FilterSheet({ visible, onClose }: Props) {
             <View style={styles.sheet}>
               <View style={styles.handle} />
               <Text style={styles.heading}>Filtres</Text>
-
-              <Text style={styles.sectionLabel}>Rayon de recherche</Text>
-              <View style={styles.optionRow}>
-                {RADIUS_OPTIONS.map((r) => (
-                  <TouchableOpacity
-                    key={r}
-                    style={[styles.optionBtn, activeRadius === r && styles.optionBtnActive]}
-                    onPress={() => handleRadius(r)}
-                  >
-                    <Text style={[styles.optionText, activeRadius === r && styles.optionTextActive]}>
-                      {formatRadius(r)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
 
               <Text style={styles.sectionLabel}>Visibilité</Text>
               {VISIBILITY_OPTIONS.map((o) => (
@@ -100,7 +82,7 @@ const styles = StyleSheet.create({
     width: 40, height: 4, backgroundColor: '#E2E8F0',
     borderRadius: 2, alignSelf: 'center', marginBottom: 20,
   },
-  heading: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginBottom: 20 },
+  heading: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 20 },
   sectionLabel: { fontSize: 13, fontWeight: '600', color: '#475569', marginBottom: 10, marginTop: 8 },
   optionRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
   optionBtn: {
@@ -108,7 +90,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center',
     backgroundColor: '#F8FAFC',
   },
-  optionBtnActive: { backgroundColor: '#0F172A', borderColor: '#0F172A' },
+  optionBtnActive: { backgroundColor: '#6366F1', borderColor: '#6366F1' },
   optionText: { fontSize: 13, fontWeight: '600', color: '#64748B' },
   optionTextActive: { color: '#fff' },
   row: {
@@ -117,14 +99,14 @@ const styles = StyleSheet.create({
     marginBottom: 6, backgroundColor: '#F8FAFC',
     borderWidth: 1, borderColor: '#E2E8F0',
   },
-  rowActive: { borderColor: '#0F172A', backgroundColor: '#F1F5F9' },
+  rowActive: { borderColor: '#6366F1', backgroundColor: '#EEF2FF' },
   rowText: { gap: 2 },
-  rowTitle: { fontSize: 14, fontWeight: '600', color: '#0F172A' },
+  rowTitle: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
   rowSub: { fontSize: 12, color: '#94A3B8' },
-  check: { fontSize: 16, color: '#0F172A', fontWeight: '700' },
+  check: { fontSize: 16, color: '#6366F1', fontWeight: '700' },
   doneBtn: {
     marginTop: 20, paddingVertical: 14, borderRadius: 12,
-    backgroundColor: '#0F172A', alignItems: 'center',
+    backgroundColor: '#6366F1', alignItems: 'center',
   },
   doneText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

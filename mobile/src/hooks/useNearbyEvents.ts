@@ -1,34 +1,23 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { Region } from 'react-native-maps';
+import { useCallback, useEffect } from 'react';
 import { useEventsStore } from '../store/events.store';
-import { regionToRadiusMeters } from '../utils/geo.utils';
-
-const DEBOUNCE_MS = 500;
 
 /**
- * Déclenche le fetch des événements proches à chaque changement de région,
- * avec un debounce pour éviter de surcharger le backend.
+ * Charge tous les événements accessibles au montage de la carte,
+ * une fois que la position GPS est prête.
  *
- * @param initialRegion - Région initiale au montage pour le premier fetch
- * @returns Handler à passer à onRegionChangeComplete de MapView
+ * @param ready - Indique si la position GPS est disponible
+ * @returns Fonction pour recharger manuellement les événements
  */
-export function useNearbyEvents(initialRegion: Region) {
-  const fetchNearby = useEventsStore((s) => s.fetchNearby);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const fetch = useCallback((region: Region) => {
-    const radius = regionToRadiusMeters(region);
-    fetchNearby(region.latitude, region.longitude, radius);
-  }, [fetchNearby]);
+export function useNearbyEvents(ready: boolean) {
+  const fetchEvents = useEventsStore((s) => s.fetchEvents);
 
   useEffect(() => {
-    fetch(initialRegion);
-  }, []);
+    if (!ready) return;
+    console.log(`[${Date.now()}][useNearbyEvents] fetch all events`);
+    fetchEvents();
+  }, [ready]);
 
-  const handleRegionChangeComplete = useCallback((region: Region) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => fetch(region), DEBOUNCE_MS);
-  }, [fetch]);
+  const refresh = useCallback(() => fetchEvents(), [fetchEvents]);
 
-  return { handleRegionChangeComplete };
+  return { refresh };
 }

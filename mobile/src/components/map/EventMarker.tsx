@@ -26,9 +26,10 @@ export function EventMarker({ event, onSelect }: Props) {
     <Marker
       coordinate={{ latitude: event.lat, longitude: event.lng }}
       onPress={handlePress}
-      tracksViewChanges={false}
+      tracksViewChanges={true}
+      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
     >
-      <View style={styles.wrapper}>
+      <View style={styles.wrapper} collapsable={false}>
         <View style={[styles.bubble, { borderColor: dotColor }]}>
           <Text style={[styles.title]} numberOfLines={1}>{event.title}</Text>
           <Text style={[styles.time, { color: labelColor }]}>{formatTime(event.startAt)}</Text>

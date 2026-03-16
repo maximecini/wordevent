@@ -5,7 +5,6 @@ import { EventsGeoService } from './services/events-geo.service';
 import { EventsGateway } from './events.gateway';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { FindNearbyDto } from './dto/find-nearby.dto';
 import { EventResponse } from './events.types';
 
 /**
@@ -22,9 +21,9 @@ export class EventsService {
     private readonly gateway: EventsGateway,
   ) {}
 
-  /** @see EventsGeoService.findNearby */
-  findNearby(userId: string, dto: FindNearbyDto): Promise<EventResponse[]> {
-    return this.geo.findNearby(userId, dto);
+  /** @see EventsGeoService.findAll */
+  findAll(userId: string): Promise<EventResponse[]> {
+    return this.geo.findAll(userId);
   }
 
   /**

@@ -33,10 +33,10 @@ export function CreateChoiceModal({ visible, onClose, onChooseEvent, onChoosePla
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.option, styles.optionDisabled]} onPress={onChoosePlace}>
+              <TouchableOpacity style={styles.option} onPress={onChoosePlace}>
                 <Text style={styles.optionIcon}>📍</Text>
                 <View>
-                  <Text style={[styles.optionTitle, styles.optionTitleDisabled]}>Lieu</Text>
+                  <Text style={styles.optionTitle}>Lieu</Text>
                   <Text style={styles.optionSub}>Point d'intérêt personnel</Text>
                 </View>
               </TouchableOpacity>

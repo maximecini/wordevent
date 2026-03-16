@@ -16,7 +16,7 @@ import { PlacesOfInterestModule } from './places-of-interest/places-of-interest.
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60000, limit: 120 },
+      { name: 'default', ttl: 60000, limit: 300 },
       { name: 'auth', ttl: 60000, limit: 10 },
     ]),
     PrismaModule,

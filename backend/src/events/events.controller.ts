@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { FindNearbyDto } from './dto/find-nearby.dto';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -20,10 +20,10 @@ export class EventsController {
    * @param user - Utilisateur connecté
    * @param dto - Latitude, longitude et rayon de recherche
    */
-  @ApiOperation({ summary: 'Events autour de moi' })
+  @ApiOperation({ summary: 'Tous les événements accessibles' })
   @Get()
-  findNearby(@CurrentUser() user: any, @Query() dto: FindNearbyDto) {
-    return this.events.findNearby(user.id, dto);
+  findAll(@CurrentUser() user: any) {
+    return this.events.findAll(user.id);
   }
 
   /**

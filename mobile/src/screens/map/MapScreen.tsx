@@ -1,13 +1,16 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import MapView, { LongPressEvent, Region } from 'react-native-maps';
+import MapView, { LongPressEvent, Marker, Region } from 'react-native-maps';
 import { useLocation } from '../../hooks/useLocation';
 import { useNearbyEvents } from '../../hooks/useNearbyEvents';
 import { useEventClusters, ClusterItem } from '../../hooks/useEventClusters';
 import { useEventsStore } from '../../store/events.store';
+import { usePlacesStore } from '../../store/places.store';
 import { EventResponse } from '../../types/event.types';
+import { PoiMarker } from '../../components/map/PoiMarker';
 import { CreateChoiceModal } from '../../components/map/CreateChoiceModal';
 import { CreateEventSheet } from '../../components/map/CreateEventSheet';
+import { CreatePlaceSheet } from '../../components/map/CreatePlaceSheet';
 import { FilterBar } from '../../components/map/FilterBar';
 import { FilterSheet } from '../../components/map/FilterSheet';
 import { EventMarker } from '../../components/map/EventMarker';
@@ -15,7 +18,7 @@ import { ClusterMarker } from '../../components/map/ClusterMarker';
 import { EventDetailSheet } from '../../components/map/event-detail/EventDetailSheet';
 
 type TapCoords = { latitude: number; longitude: number };
-type Step = 'idle' | 'choice' | 'event';
+type Step = 'idle' | 'choice' | 'event' | 'place';
 
 function renderClusterItem(
   item: ClusterItem,
@@ -24,6 +27,7 @@ function renderClusterItem(
 ) {
   const [lng, lat] = item.geometry.coordinates;
   const coordinate = { latitude: lat, longitude: lng };
+  console.log('[renderClusterItem]', { lat, lng, cluster: item.properties.cluster });
 
   if (item.properties.cluster) {
     const count = (item.properties as { point_count: number }).point_count;
@@ -46,25 +50,36 @@ export function MapScreen() {
   const { coords, ready } = useLocation();
   const mapRef = useRef<MapView>(null);
   const events = useEventsStore((s) => s.events);
+  const visibilityFilter = useEventsStore((s) => s.visibilityFilter);
+  const places = usePlacesStore((s) => s.places);
+  const fetchPlaces = usePlacesStore((s) => s.fetchPlaces);
+  const filteredEvents = useMemo(() => {
+    if (visibilityFilter === 'ALL') return events;
+    return events.filter((e) => e.visibility === visibilityFilter);
+  }, [events, visibilityFilter]);
 
   const [tapCoords, setTapCoords] = useState<TapCoords | null>(null);
   const [step, setStep] = useState<Step>('idle');
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventResponse | null>(null);
 
-  const initialRegion: Region = useMemo(() => ({
+  const initialRegion: Region = {
     latitude: coords.lat, longitude: coords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05,
-  }), []);
+  };
 
   const [currentRegion, setCurrentRegion] = useState<Region>(initialRegion);
 
-  const { handleRegionChangeComplete } = useNearbyEvents(initialRegion);
-  const clusters = useEventClusters(events, currentRegion);
+  useNearbyEvents(ready);
+
+  useEffect(() => {
+    if (ready) fetchPlaces();
+  }, [ready]);
+
+  const clusters = useEventClusters(filteredEvents, currentRegion);
 
   const handleRegionChange = useCallback((region: Region) => {
     setCurrentRegion(region);
-    handleRegionChangeComplete(region);
-  }, [handleRegionChangeComplete]);
+  }, []);
 
   const handleLongPress = useCallback((e: LongPressEvent) => {
     setTapCoords(e.nativeEvent.coordinate);
@@ -77,6 +92,7 @@ export function MapScreen() {
   }, []);
 
   const handleChooseEvent = useCallback(() => setStep('event'), []);
+  const handleChoosePlace = useCallback(() => setStep('place'), []);
 
   const handleSelectEvent = useCallback((event: EventResponse) => setSelectedEvent(event), []);
 
@@ -97,11 +113,19 @@ export function MapScreen() {
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
         initialRegion={initialRegion}
-        showsUserLocation
         onLongPress={handleLongPress}
+        onPress={selectedEvent ? handleCloseDetail : undefined}
         onRegionChangeComplete={handleRegionChange}
       >
+        {currentRegion.latitudeDelta < 0.3 && (
+          <Marker coordinate={{ latitude: coords.lat, longitude: coords.lng }} anchor={{ x: 0.5, y: 0.5 }}>
+            <View style={styles.userDot} />
+          </Marker>
+        )}
         {clusters.map((item) => renderClusterItem(item, handleSelectEvent, handleZoomCluster))}
+        {places.map((place) => (
+          <PoiMarker key={place.id} place={place} onSelect={() => {}} />
+        ))}
       </MapView>
 
       <FilterBar onOpenSheet={() => setFilterSheetOpen(true)} />
@@ -115,11 +139,19 @@ export function MapScreen() {
         visible={step === 'choice'}
         onClose={handleClose}
         onChooseEvent={handleChooseEvent}
-        onChoosePlace={handleClose}
+        onChoosePlace={handleChoosePlace}
       />
 
       {step === 'event' && tapCoords && (
         <CreateEventSheet
+          lat={tapCoords.latitude}
+          lng={tapCoords.longitude}
+          onClose={handleClose}
+        />
+      )}
+
+      {step === 'place' && tapCoords && (
+        <CreatePlaceSheet
           lat={tapCoords.latitude}
           lng={tapCoords.longitude}
           onClose={handleClose}
@@ -134,4 +166,12 @@ export function MapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loading: { flex: 1, backgroundColor: '#F8FAFC' },
+  userDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#4A90D9',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
 });

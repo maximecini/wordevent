@@ -21,8 +21,8 @@ export function ClusterMarker({ coordinate, count, onZoom }: Props) {
   const size = clusterSize(count);
 
   return (
-    <Marker coordinate={coordinate} onPress={handlePress} tracksViewChanges={false}>
-      <View style={[styles.circle, { width: size, height: size, borderRadius: size / 2 }]}>
+    <Marker coordinate={coordinate} onPress={handlePress} tracksViewChanges={true}>
+      <View style={[styles.circle, { width: size, height: size, borderRadius: size / 2 }]} collapsable={false}>
         <Text style={styles.count}>{count}</Text>
       </View>
     </Marker>

@@ -1,22 +1,17 @@
 import { create } from 'zustand';
-import { createEvent, fetchNearbyEvents } from '../api/endpoints/events.api';
+import { createEvent, fetchAllEvents } from '../api/endpoints/events.api';
 import { CreateEventPayload, EventResponse, EventVisibility } from '../types/event.types';
 
 export type VisibilityFilter = 'ALL' | EventVisibility;
-
-export const RADIUS_OPTIONS = [500, 1000, 5000, 10000] as const;
-export type RadiusOption = typeof RADIUS_OPTIONS[number];
 
 interface EventsState {
   events: EventResponse[];
   creating: boolean;
   loading: boolean;
-  activeRadius: RadiusOption;
   visibilityFilter: VisibilityFilter;
-  setRadius: (radius: RadiusOption) => void;
   setVisibilityFilter: (filter: VisibilityFilter) => void;
   addEvent: (payload: CreateEventPayload) => Promise<void>;
-  fetchNearby: (lat: number, lng: number, radius: number) => Promise<void>;
+  fetchEvents: () => Promise<void>;
   upsertEvent: (event: EventResponse) => void;
   removeEvent: (id: string) => void;
 }
@@ -25,10 +20,8 @@ export const useEventsStore = create<EventsState>((set) => ({
   events: [],
   creating: false,
   loading: false,
-  activeRadius: 5000,
   visibilityFilter: 'ALL',
 
-  setRadius: (activeRadius) => set({ activeRadius }),
   setVisibilityFilter: (visibilityFilter) => set({ visibilityFilter }),
 
   addEvent: async (payload) => {
@@ -41,11 +34,14 @@ export const useEventsStore = create<EventsState>((set) => ({
     }
   },
 
-  fetchNearby: async (lat, lng, radius) => {
+  fetchEvents: async () => {
     set({ loading: true });
     try {
-      const events = await fetchNearbyEvents(lat, lng, radius);
+      const events = await fetchAllEvents();
+      console.log(`[${Date.now()}][events.store] fetchEvents →`, events.length, 'events');
       set({ events });
+    } catch (e) {
+      console.error('[events.store] fetchEvents erreur →', e);
     } finally {
       set({ loading: false });
     }

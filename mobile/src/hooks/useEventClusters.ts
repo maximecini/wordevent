@@ -49,6 +49,8 @@ export function useEventClusters(events: EventResponse[], region: Region): Clust
   return useMemo(() => {
     const bbox = regionToBBox(region);
     const zoom = deltaToZoom(region.latitudeDelta);
-    return supercluster.getClusters(bbox, zoom) as ClusterItem[];
+    const clusters = supercluster.getClusters(bbox, zoom) as ClusterItem[];
+    console.log(`[${Date.now()}][useEventClusters] zoom=${zoom} bbox=${JSON.stringify(bbox)} → ${clusters.length} items`);
+    return clusters;
   }, [supercluster, region]);
 }

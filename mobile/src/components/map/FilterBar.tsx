@@ -1,15 +1,11 @@
 import React, { useCallback } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RADIUS_OPTIONS, RadiusOption, VisibilityFilter, useEventsStore } from '../../store/events.store';
+import { VisibilityFilter, useEventsStore } from '../../store/events.store';
 
 type Props = {
   onOpenSheet: () => void;
 };
-
-function formatRadius(m: number) {
-  return m < 1000 ? `${m}m` : `${m / 1000}km`;
-}
 
 const VISIBILITY_CHIPS: { label: string; emoji: string; value: VisibilityFilter; color: string; bg: string }[] = [
   { label: 'Tous',   emoji: '🌍', value: 'ALL',     color: '#2563EB', bg: '#EFF6FF' },
@@ -20,84 +16,68 @@ const VISIBILITY_CHIPS: { label: string; emoji: string; value: VisibilityFilter;
 /** Barre de filtres — sous la zone caméra, au-dessus de la carte. */
 export function FilterBar({ onOpenSheet }: Props) {
   const { top } = useSafeAreaInsets();
-  const activeRadius = useEventsStore((s) => s.activeRadius);
   const visibilityFilter = useEventsStore((s) => s.visibilityFilter);
-  const setRadius = useEventsStore((s) => s.setRadius);
   const setVisibilityFilter = useEventsStore((s) => s.setVisibilityFilter);
 
-  const handleRadius = useCallback((r: RadiusOption) => setRadius(r), [setRadius]);
   const handleVisibility = useCallback((v: VisibilityFilter) => setVisibilityFilter(v), [setVisibilityFilter]);
 
   return (
-    <View style={[styles.container, { top: top + 8 }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+    <View style={[styles.wrapper, { top: top + 8 }]}>
+      <View style={styles.container}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
 
-        {/* Groupe distances — segmented control */}
-        <View style={styles.segmented}>
-          {RADIUS_OPTIONS.map((r, i) => {
-            const isActive = activeRadius === r;
-            const isFirst = i === 0;
-            const isLast = i === RADIUS_OPTIONS.length - 1;
+          {/* Chips visibilité — colorées avec emoji */}
+          {VISIBILITY_CHIPS.map((c) => {
+            const isActive = visibilityFilter === c.value;
             return (
               <TouchableOpacity
-                key={r}
-                style={[
-                  styles.segment,
-                  isFirst && styles.segmentFirst,
-                  isLast && styles.segmentLast,
-                  isActive && styles.segmentActive,
-                ]}
-                onPress={() => handleRadius(r)}
+                key={c.value}
+                style={[styles.chip, isActive && { backgroundColor: c.bg, borderColor: c.color }]}
+                onPress={() => handleVisibility(c.value)}
               >
-                <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
-                  {formatRadius(r)}
-                </Text>
+                <Text style={styles.chipEmoji}>{c.emoji}</Text>
+                <Text style={[styles.chipText, isActive && { color: c.color }]}>{c.label}</Text>
               </TouchableOpacity>
             );
           })}
-        </View>
 
-        <View style={styles.divider} />
+          <View style={styles.divider} />
 
-        {/* Chips visibilité — colorées avec emoji */}
-        {VISIBILITY_CHIPS.map((c) => {
-          const isActive = visibilityFilter === c.value;
-          return (
-            <TouchableOpacity
-              key={c.value}
-              style={[styles.chip, isActive && { backgroundColor: c.bg, borderColor: c.color }]}
-              onPress={() => handleVisibility(c.value)}
-            >
-              <Text style={styles.chipEmoji}>{c.emoji}</Text>
-              <Text style={[styles.chipText, isActive && { color: c.color }]}>{c.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
+          {/* Bouton filtres avancés */}
+          <TouchableOpacity style={styles.chip} onPress={onOpenSheet}>
+            <Text style={styles.chipEmoji}>🎚️</Text>
+            <Text style={styles.chipText}>Filtres</Text>
+          </TouchableOpacity>
 
-        <View style={styles.divider} />
-
-        {/* Bouton filtres avancés */}
-        <TouchableOpacity style={styles.chip} onPress={onOpenSheet}>
-          <Text style={styles.chipEmoji}>🎚️</Text>
-          <Text style={styles.chipText}>Filtres</Text>
-        </TouchableOpacity>
-
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     position: 'absolute',
     left: 12,
     right: 12,
-    backgroundColor: 'transparent',
-    paddingVertical: 0,
+    alignItems: 'center',
+  },
+  container: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.07)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   row: {
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    gap: 6,
     alignItems: 'center',
   },
 

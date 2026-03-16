@@ -13,20 +13,11 @@ export async function createEvent(payload: CreateEventPayload): Promise<EventRes
 }
 
 /**
- * Récupère les événements dans un rayon autour d'une position.
+ * Récupère tous les événements actifs accessibles à l'utilisateur.
  *
- * @param lat - Latitude du centre de recherche
- * @param lng - Longitude du centre de recherche
- * @param radius - Rayon de recherche en mètres
- * @returns Liste des événements dans le rayon
+ * @returns Liste de tous les événements
  */
-export async function fetchNearbyEvents(
-  lat: number,
-  lng: number,
-  radius: number,
-): Promise<EventResponse[]> {
-  const { data } = await apiClient.get<EventResponse[]>('/events', {
-    params: { lat, lng, radius },
-  });
+export async function fetchAllEvents(): Promise<EventResponse[]> {
+  const { data } = await apiClient.get<EventResponse[]>('/events');
   return data;
 }

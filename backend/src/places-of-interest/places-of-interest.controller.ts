@@ -1,17 +1,13 @@
 import {
   Body, Controller, Delete, Get, HttpCode, HttpStatus,
-  Param, Patch, Post, Query, UseGuards,
+  Param, Patch, Post, UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreatePlaceDto } from './dto/create-place.dto';
-import { FindNearbyPlacesDto } from './dto/find-nearby-places.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
 import { PlacesOfInterestService } from './places-of-interest.service';
 
-@ApiTags('places')
-@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('places')
 export class PlacesOfInterestController {
@@ -25,8 +21,8 @@ export class PlacesOfInterestController {
    * @returns Liste des POIs de l'utilisateur dans le rayon
    */
   @Get()
-  findNearby(@CurrentUser() user: any, @Query() dto: FindNearbyPlacesDto) {
-    return this.places.findNearby(user.id, dto);
+  findAll(@CurrentUser() user: any) {
+    return this.places.findAll(user.id);
   }
 
   /**

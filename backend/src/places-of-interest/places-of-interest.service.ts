@@ -2,11 +2,9 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlaceDto } from './dto/create-place.dto';
-import { FindNearbyPlacesDto } from './dto/find-nearby-places.dto';
+
 import { UpdatePlaceDto } from './dto/update-place.dto';
 import { PlaceResponse, RawPlace, serializePlace } from './places-of-interest.types';
-
-const DEFAULT_RADIUS = 5000;
 
 const PLACE_SELECT = `id, name, description, icon, "userId", "createdAt", "updatedAt", ST_Y(location) as lat, ST_X(location) as lng`;
 
@@ -41,17 +39,21 @@ export class PlacesOfInterestService {
    * @param dto - Coordonnées et rayon de recherche
    * @returns Liste des POIs sérialisés triés par distance
    */
-  async findNearby(userId: string, dto: FindNearbyPlacesDto): Promise<PlaceResponse[]> {
-    const radius = dto.radius ?? DEFAULT_RADIUS;
-    const rows = (await this.prisma.$queryRawUnsafe(
+  /**
+   * Retourne tous les POIs personnels de l'utilisateur, sans restriction géographique.
+   *
+   * @param userId - Id du propriétaire
+   * @returns Liste de tous les POIs sérialisés
+   */
+  async findAll(userId: string): Promise<PlaceResponse[]> {
+    const rows = await this.prisma.$queryRawUnsafe<RawPlace[]>(
       `SELECT ${PLACE_SELECT}
        FROM places_of_interest
-       WHERE ST_DWithin(location::geography, ST_MakePoint($1, $2)::geography, $3)
-         AND "userId" = $4
-       ORDER BY location <-> ST_MakePoint($1, $2)::geography
+       WHERE "userId" = $1
+       ORDER BY "createdAt" DESC
        LIMIT 200`,
-      dto.lng, dto.lat, radius, userId,
-    )) as RawPlace[];
+      userId,
+    );
     return rows.map(serializePlace);
   }
 

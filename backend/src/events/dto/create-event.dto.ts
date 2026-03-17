@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { EventVisibility } from '@prisma/client';
+import { EventCategory, EventVisibility } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsString, IsNotEmpty, IsOptional, IsNumber,
@@ -22,6 +22,10 @@ export class CreateEventDto {
   @ApiProperty({ enum: EventVisibility, default: EventVisibility.PUBLIC })
   @IsEnum(EventVisibility) @IsOptional()
   visibility?: EventVisibility;
+
+  @ApiProperty({ enum: EventCategory, default: EventCategory.OTHER })
+  @IsEnum(EventCategory) @IsOptional()
+  category?: EventCategory;
 
   @ApiProperty() @Type(() => Date) @IsDate()
   startAt: Date;

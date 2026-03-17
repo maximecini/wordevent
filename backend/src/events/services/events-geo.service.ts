@@ -21,7 +21,7 @@ export class EventsGeoService {
   async findAll(userId: string): Promise<EventResponse[]> {
     const rows = (await this.prisma.$queryRawUnsafe(
       `SELECT
-         id, title, description, capacity, visibility, "startAt", "endAt", "creatorId", "createdAt",
+         id, title, description, capacity, visibility, category, "startAt", "endAt", "creatorId", "createdAt",
          ST_Y(location) as lat, ST_X(location) as lng,
          (SELECT COUNT(*) FROM participations WHERE "eventId" = events.id) as "participantCount",
          EXISTS(SELECT 1 FROM participations WHERE "eventId" = events.id AND "userId" = $1) as "isParticipant"

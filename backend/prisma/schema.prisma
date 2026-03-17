@@ -32,6 +32,15 @@ enum InvitationStatus {
   DECLINED
 }
 
+enum EventCategory {
+  SPORT
+  MUSIC
+  FOOD
+  PARTY
+  ART
+  OTHER
+}
+
 model User {
   id         String   @id @default(uuid())
   email      String   @unique
@@ -62,6 +71,7 @@ model Event {
   location    Unsupported("geometry(Point, 4326)") // PostGIS Point — ST_DWithin, ST_Distance
   capacity    Int
   visibility  EventVisibility @default(PUBLIC)
+  category    EventCategory   @default(OTHER)
   startAt     DateTime
   endAt       DateTime
   createdAt   DateTime        @default(now())

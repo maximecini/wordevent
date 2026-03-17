@@ -1,4 +1,5 @@
 export type EventVisibility = 'PUBLIC' | 'PRIVATE';
+export type EventCategory = 'SPORT' | 'MUSIC' | 'FOOD' | 'PARTY' | 'ART' | 'OTHER';
 
 export interface EventResponse {
   id: string;
@@ -8,6 +9,7 @@ export interface EventResponse {
   lng: number;
   capacity: number;
   visibility: EventVisibility;
+  category: EventCategory;
   startAt: string;
   endAt: string;
   creatorId: string;
@@ -23,6 +25,7 @@ export interface CreateEventPayload {
   lng: number;
   capacity: number;
   visibility: EventVisibility;
+  category: EventCategory;
   startAt: string;
   endAt: string;
 }

@@ -7,7 +7,7 @@ import { UpdateEventDto } from '../dto/update-event.dto';
 import { EventResponse, RawEvent, serializeEvent } from '../events.types';
 
 const EVENT_SELECT = `
-  id, title, description, capacity, visibility, "startAt", "endAt", "creatorId", "createdAt",
+  id, title, description, capacity, visibility, category, "startAt", "endAt", "creatorId", "createdAt",
   ST_Y(location) as lat, ST_X(location) as lng,
   (SELECT COUNT(*) FROM participations WHERE "eventId" = events.id) as "participantCount"
 `;
@@ -31,11 +31,12 @@ export class EventsCrudService {
 
   private async insertEvent(id: string, userId: string, dto: CreateEventDto) {
     await this.prisma.$executeRaw`
-      INSERT INTO events (id, title, description, location, capacity, visibility, "startAt", "endAt", "creatorId", "createdAt", "updatedAt")
+      INSERT INTO events (id, title, description, location, capacity, visibility, category, "startAt", "endAt", "creatorId", "createdAt", "updatedAt")
       VALUES (
         ${id}, ${dto.title}, ${dto.description ?? null},
         ST_SetSRID(ST_MakePoint(${dto.lng}, ${dto.lat}), 4326),
         ${dto.capacity}, ${dto.visibility ?? 'PUBLIC'}::"EventVisibility",
+        ${dto.category ?? 'OTHER'}::"EventCategory",
         ${dto.startAt}, ${dto.endAt}, ${userId}, now(), now()
       )`;
   }

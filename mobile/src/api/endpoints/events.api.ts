@@ -18,6 +18,8 @@ export async function createEvent(payload: CreateEventPayload): Promise<EventRes
  * @returns Liste de tous les événements
  */
 export async function fetchAllEvents(): Promise<EventResponse[]> {
+  console.log(`[${Date.now()}][events.api] GET /events...`);
   const { data } = await apiClient.get<EventResponse[]>('/events');
+  console.log(`[${Date.now()}][events.api] GET /events → ${data.length} events`, data.length > 0 ? data[0] : '(vide)');
   return data;
 }

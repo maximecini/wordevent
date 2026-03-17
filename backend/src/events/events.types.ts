@@ -1,4 +1,4 @@
-import { EventVisibility } from '@prisma/client';
+import { EventCategory, EventVisibility } from '@prisma/client';
 
 /** Résultat brut d'une requête PostGIS — lat/lng extraits via ST_Y/ST_X. */
 export interface RawEvent {
@@ -7,6 +7,7 @@ export interface RawEvent {
   description: string | null;
   capacity: number;
   visibility: EventVisibility;
+  category: EventCategory;
   startAt: Date;
   endAt: Date;
   creatorId: string;
@@ -28,6 +29,7 @@ export interface EventResponse {
   participantCount: number;
   isParticipant: boolean;
   visibility: EventVisibility;
+  category: EventCategory;
   startAt: Date;
   endAt: Date;
   creatorId: string;
@@ -46,6 +48,7 @@ export function serializeEvent(raw: RawEvent): EventResponse {
     participantCount: Number(raw.participantCount ?? 0),
     isParticipant: Boolean(raw.isParticipant),
     visibility: raw.visibility,
+    category: raw.category,
     startAt: raw.startAt,
     endAt: raw.endAt,
     creatorId: raw.creatorId,

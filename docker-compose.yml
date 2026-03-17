@@ -49,8 +49,8 @@ services:
     tty: true
     environment:
       - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
-      - REACT_NATIVE_PACKAGER_HOSTNAME=${NGROK_DOMAIN}
-      - EXPO_PACKAGER_PROXY_URL=https://${NGROK_DOMAIN}
+      - REACT_NATIVE_PACKAGER_HOSTNAME=${TUNNEL_DOMAIN}
+      - EXPO_PACKAGER_PROXY_URL=https://${TUNNEL_DOMAIN}
     ports:
       - "8081:8081"   # Metro bundler
       - "19000:19000" # Expo
@@ -60,11 +60,9 @@ services:
       - /app/node_modules
     restart: unless-stopped
 
-  ngrok-backend:
-    image: ngrok/ngrok:alpine
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    command: http --url=${NGROK_DOMAIN} --pooling-enabled nginx:80
+  tunnel:
+    image: alpine
+    command: sh -c "apk add --no-cache openssh-client && ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:nginx:80 nokey@localhost.run 2>&1"
     depends_on:
       - nginx
     restart: unless-stopped

@@ -1,61 +1,65 @@
-import React, { useCallback } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { EventResponse } from '../../types/event.types';
+import { getCategoryConfig } from '../../utils/event-category.utils';
 
 type Props = {
   event: EventResponse;
   onSelect: (event: EventResponse) => void;
 };
 
-function formatTime(isoDate: string): string {
-  return new Date(isoDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
+const SIZE = 52;
 
-/** Marqueur individuel pour un événement sur la carte. */
+/** Marqueur style Instagram — cercle image, fonctionne iOS + Android. */
 export function EventMarker({ event, onSelect }: Props) {
-  const isPrivate = event.visibility === 'PRIVATE';
-  const isFull = event.participantCount >= event.capacity;
+  const [ready, setReady] = useState(false);
+  const config      = getCategoryConfig(event.category);
+  const isFull      = event.participantCount >= event.capacity;
+  const borderColor = isFull ? '#94A3B8' : config.color;
 
   const handlePress = useCallback(() => onSelect(event), [event, onSelect]);
-
-  const dotColor = isPrivate ? '#7C3AED' : '#2563EB';
-  const labelColor = isFull ? '#94A3B8' : dotColor;
 
   return (
     <Marker
       coordinate={{ latitude: event.lat, longitude: event.lng }}
       onPress={handlePress}
-      tracksViewChanges={true}
-      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+      tracksViewChanges={!ready}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
     >
-      <View style={styles.wrapper} collapsable={false}>
-        <View style={[styles.bubble, { borderColor: dotColor }]}>
-          <Text style={[styles.title]} numberOfLines={1}>{event.title}</Text>
-          <Text style={[styles.time, { color: labelColor }]}>{formatTime(event.startAt)}</Text>
+      <View style={styles.wrapper} collapsable={false} onLayout={() => setReady(true)}>
+        <View style={[styles.border, { borderColor }]}>
+          <Image
+            source={config.image}
+            style={[styles.image, isFull && styles.imageFull]}
+          />
         </View>
-        <View style={[styles.dot, { backgroundColor: dotColor }]} />
       </View>
     </Marker>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { alignItems: 'center' },
-  bubble: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1.5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    maxWidth: 130,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+  wrapper: {
+    alignItems: 'center',
+    padding: 6,
   },
-  title: { fontSize: 12, fontWeight: '700', color: '#0F172A' },
-  time: { fontSize: 11, fontWeight: '500', marginTop: 1 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 3 },
+  border: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    borderWidth: 3,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  imageFull: { opacity: 0.35 },
 });

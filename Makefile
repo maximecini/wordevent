@@ -3,13 +3,24 @@
 all: up
 
 up:
-	docker compose up --build
+	docker compose up -d --build db backend nginx tunnel
+	@echo "Attente de l'URL du tunnel..."
+	@URL=""; \
+	while [ -z "$$URL" ]; do \
+		URL=$$(docker compose logs tunnel 2>&1 | grep -o 'https://[a-z0-9]*\.lhr\.life' | tail -1); \
+		sleep 1; \
+	done; \
+	DOMAIN=$$(echo $$URL | sed 's|https://||'); \
+	echo "Tunnel actif : $$URL"; \
+	sed -i "s|TUNNEL_DOMAIN=.*|TUNNEL_DOMAIN=$$DOMAIN|" .env; \
+	sed -i "s|EXPO_PUBLIC_API_URL=.*|EXPO_PUBLIC_API_URL=$$URL/api|" mobile/.env; \
+	docker compose up -d mobile
 
 down:
 	docker compose down
 
 restart:
-	docker compose down && docker compose up --build
+	docker compose down && make up
 
 logs:
 	docker compose logs -f

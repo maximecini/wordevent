@@ -69,6 +69,14 @@ export function MapScreen() {
 
   const [currentRegion, setCurrentRegion] = useState<Region>(initialRegion);
 
+  useEffect(() => {
+    console.log(`[${Date.now()}][MapScreen] ready=${ready} coords=`, coords);
+  }, [ready, coords]);
+
+  useEffect(() => {
+    console.log(`[${Date.now()}][MapScreen] events=${events.length} filteredEvents=${filteredEvents.length} filter=${visibilityFilter}`);
+  }, [events, filteredEvents]);
+
   useNearbyEvents(ready);
 
   useEffect(() => {
@@ -76,6 +84,10 @@ export function MapScreen() {
   }, [ready]);
 
   const clusters = useEventClusters(filteredEvents, currentRegion);
+
+  useEffect(() => {
+    console.log(`[${Date.now()}][MapScreen] clusters=${clusters.length} latDelta=${currentRegion.latitudeDelta.toFixed(4)}`);
+  }, [clusters]);
 
   const handleRegionChange = useCallback((region: Region) => {
     setCurrentRegion(region);
@@ -118,7 +130,11 @@ export function MapScreen() {
         onRegionChangeComplete={handleRegionChange}
       >
         {currentRegion.latitudeDelta < 0.3 && (
-          <Marker coordinate={{ latitude: coords.lat, longitude: coords.lng }} anchor={{ x: 0.5, y: 0.5 }}>
+          <Marker
+            coordinate={{ latitude: coords.lat, longitude: coords.lng }}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
+          >
             <View style={styles.userDot} />
           </Marker>
         )}

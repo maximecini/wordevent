@@ -90,7 +90,6 @@ const styles = StyleSheet.create({
     right: 12,
   },
   container: {
-    alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.88)',
     borderRadius: 14,
     borderWidth: 1,

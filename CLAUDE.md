@@ -114,6 +114,15 @@ docker compose exec backend npm run test:watch
 - Cible : iOS + Android
 - Gestionnaire de paquets : npm
 
+> **Règle absolue** : toutes les installations de packages se font **dans le conteneur Docker**, jamais sur la machine hôte.
+> ```bash
+> # Mobile
+> docker compose exec mobile npx expo install <package>
+> docker compose exec mobile npm install <package>
+> # Backend
+> docker compose exec backend npm install <package>
+> ```
+
 ## Commandes utiles (à compléter)
 ```bash
 # backend

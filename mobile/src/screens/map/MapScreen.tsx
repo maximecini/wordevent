@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import MapView, { LongPressEvent, Marker, Region } from 'react-native-maps';
+import MapView, { LongPressEvent, Region } from 'react-native-maps';
 import { useLocation } from '../../hooks/useLocation';
 import { useNearbyEvents } from '../../hooks/useNearbyEvents';
 import { useEventClusters, ClusterItem } from '../../hooks/useEventClusters';
@@ -128,16 +128,8 @@ export function MapScreen() {
         onLongPress={handleLongPress}
         onPress={selectedEvent ? handleCloseDetail : undefined}
         onRegionChangeComplete={handleRegionChange}
+        showsUserLocation
       >
-        {currentRegion.latitudeDelta < 0.3 && (
-          <Marker
-            coordinate={{ latitude: coords.lat, longitude: coords.lng }}
-            anchor={{ x: 0.5, y: 0.5 }}
-            tracksViewChanges={false}
-          >
-            <View style={styles.userDot} />
-          </Marker>
-        )}
         {clusters.map((item) => renderClusterItem(item, handleSelectEvent, handleZoomCluster))}
         {places.map((place) => (
           <PoiMarker key={place.id} place={place} onSelect={() => {}} />
@@ -182,12 +174,4 @@ export function MapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loading: { flex: 1, backgroundColor: '#F8FAFC' },
-  userDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#4A90D9',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
 });

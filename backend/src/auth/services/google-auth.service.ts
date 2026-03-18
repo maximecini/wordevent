@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { UsersService } from '../../users/users.service';
-import { Provider } from '@prisma/client';
+import { Provider } from '../../common/types/enums';
 
 @Injectable()
 export class GoogleAuthService {

@@ -1,11 +1,29 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  Controller, Get, Post, Patch, Delete, Body, Param,
+  UseGuards, HttpCode, HttpStatus, UploadedFile, UseInterceptors, BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+import { randomUUID } from 'crypto';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
+const imageStorage = diskStorage({
+  destination: './uploads/events',
+  filename: (_req, file, cb) => cb(null, `${randomUUID()}${extname(file.originalname)}`),
+});
+
+function imageFilter(_req: any, file: Express.Multer.File, cb: any) {
+  if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
+    return cb(new BadRequestException('Seules les images jpg, png et webp sont acceptées'), false);
+  }
+  cb(null, true);
+}
 
 @ApiTags('events')
 @ApiBearerAuth()
@@ -15,15 +33,29 @@ export class EventsController {
   constructor(private readonly events: EventsService) {}
 
   /**
-   * Retourne les événements actifs autour des coordonnées fournies.
+   * Retourne les événements actifs accessibles à l'utilisateur.
    *
    * @param user - Utilisateur connecté
-   * @param dto - Latitude, longitude et rayon de recherche
    */
   @ApiOperation({ summary: 'Tous les événements accessibles' })
   @Get()
   findAll(@CurrentUser() user: any) {
     return this.events.findAll(user.id);
+  }
+
+  /**
+   * Upload une image pour un événement. Retourne l'URL publique.
+   *
+   * @param file - Fichier image (jpg, png, webp — max 10 Mo)
+   * @returns URL publique de l'image uploadée
+   */
+  @ApiOperation({ summary: "Upload d'une image d'événement" })
+  @ApiConsumes('multipart/form-data')
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', { storage: imageStorage, fileFilter: imageFilter, limits: { fileSize: 10 * 1024 * 1024 } }))
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Aucun fichier reçu');
+    return { url: `/uploads/events/${file.filename}` };
   }
 
   /**

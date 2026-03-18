@@ -1,10 +1,12 @@
-import { EventCategory, EventVisibility } from '@prisma/client';
+export { EventVisibility, EventCategory } from '../common/types/enums';
 
 /** Résultat brut d'une requête PostGIS — lat/lng extraits via ST_Y/ST_X. */
 export interface RawEvent {
   id: string;
   title: string;
   description: string | null;
+  imageUrl: string | null;
+  address: string | null;
   capacity: number;
   visibility: EventVisibility;
   category: EventCategory;
@@ -23,6 +25,8 @@ export interface EventResponse {
   id: string;
   title: string;
   description: string | null;
+  imageUrl: string | null;
+  address: string | null;
   lat: number;
   lng: number;
   capacity: number;
@@ -42,6 +46,8 @@ export function serializeEvent(raw: RawEvent): EventResponse {
     id: raw.id,
     title: raw.title,
     description: raw.description,
+    imageUrl: raw.imageUrl,
+    address: raw.address,
     lat: Number(raw.lat),
     lng: Number(raw.lng),
     capacity: raw.capacity,

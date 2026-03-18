@@ -9,7 +9,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppleAuthService } from './apple-auth.service';
 import { UsersService } from '../../users/users.service';
-import { Provider } from '@prisma/client';
+import { Provider } from '../../common/types/enums';
 import * as appleSignin from 'apple-signin-auth';
 
 jest.mock('apple-signin-auth');

@@ -6,7 +6,7 @@
  */
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@prisma/client';
+import { Role } from '../types/enums';
 import { RolesGuard } from './roles.guard';
 
 const mockReflector = { getAllAndOverride: jest.fn() };

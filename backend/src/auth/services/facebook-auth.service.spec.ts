@@ -9,7 +9,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FacebookAuthService } from './facebook-auth.service';
 import { UsersService } from '../../users/users.service';
-import { Provider } from '@prisma/client';
+import { Provider } from '../../common/types/enums';
 
 const mockUsersService = { findOrCreateOAuth: jest.fn() };
 const mockConfigService = {

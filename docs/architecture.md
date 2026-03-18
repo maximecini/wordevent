@@ -3,11 +3,9 @@
 ## Vue globale
 
 ```
-[Mobile iOS/Android]
+[Client API / Frontend]
         |
-    Expo Go / App Store
-        |
-   [Nginx :4443]
+   [Nginx :8080]
         |
    [NestJS :3000] ←→ Socket.IO (temps réel)
         |
@@ -18,11 +16,9 @@
 
 | Couche | Techno |
 |--------|--------|
-| Mobile | React Native + Expo |
-| Maps | react-native-maps + Google Maps API |
 | Backend | NestJS (TypeScript) |
 | BDD | PostgreSQL 16 + PostGIS |
-| ORM | Prisma |
+| SQL | Raw SQL pur — pg (node-postgres) |
 | Temps réel | Socket.IO |
 | Auth | JWT + Passport |
 
@@ -37,7 +33,7 @@
 | name | String | Nom affiché |
 | avatar | String? | URL photo de profil |
 | role | USER / ADMIN | Droits d'accès |
-| provider | LOCAL / GOOGLE / APPLE | Méthode d'auth |
+| provider | LOCAL / GOOGLE / APPLE / FACEBOOK | Méthode d'auth |
 | providerId | String? | ID OAuth externe |
 
 ### Event
@@ -48,6 +44,9 @@
 | description | String? | Description |
 | location | geometry(Point, 4326) | Position PostGIS |
 | capacity | Int | Nombre max de participants |
+| imageUrl | String? | URL de l'image |
+| address | String? | Adresse lisible |
+| category | SPORT/MUSIC/FOOD/PARTY/ART/OTHER | Catégorie |
 | visibility | PUBLIC / PRIVATE | Visibilité sur la map |
 | startAt | DateTime | Début de l'événement |
 | endAt | DateTime | Fin — masqué automatiquement après |
@@ -95,12 +94,13 @@
 | Expiration | Events avec `endAt < now()` masqués de la map |
 | Admin | Peut supprimer tout event/user, accès à toutes les données |
 
-## Modules NestJS (à implémenter)
+## Modules NestJS (implémentés)
 
-- **AuthModule** — JWT, Google OAuth, Apple Sign In
+- **DatabaseModule** — service pg partagé (pool de connexions, requêtes SQL brutes)
+- **AuthModule** — JWT + refresh token, Google OAuth, Apple Sign In, Facebook
 - **UsersModule** — CRUD utilisateurs, profil
-- **EventsModule** — CRUD events, géospatial, Socket.IO
+- **EventsModule** — CRUD events, géospatial (ST_DWithin), Socket.IO
 - **ParticipationsModule** — rejoindre/quitter un event
 - **InvitationsModule** — invitations events privés
+- **MessagesModule** — historique paginé + Socket.IO chat temps réel
 - **PlacesOfInterestModule** — CRUD POIs personnels, requêtes géospatiales par rayon
-- **PrismaModule** — service DB partagé

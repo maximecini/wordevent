@@ -1,47 +1,48 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MessagesService } from './messages.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { DatabaseService } from '../database/database.service';
 
 const EVENT_ID = 'event-uuid';
 const USER_ID = 'user-uuid';
-const SENDER = { id: USER_ID, name: 'Alice', avatar: null };
 
 let service: MessagesService;
-let prisma: { event: jest.Mocked<any>; participation: jest.Mocked<any>; message: jest.Mocked<any> };
+let dbQuery: jest.Mock;
+
+const baseMessageRow = {
+  id: 'msg-uuid',
+  content: 'Bonjour',
+  eventId: EVENT_ID,
+  senderId: USER_ID,
+  createdAt: new Date('2024-01-01T00:00:00Z'),
+  senderName: 'Alice',
+  senderAvatar: null,
+};
 
 function mockEventFound() {
-  prisma.event.findUnique.mockResolvedValue({ id: EVENT_ID });
+  dbQuery.mockResolvedValueOnce([{ id: EVENT_ID }]);
+}
+
+function mockCreatorCheck(creatorId = 'other-user') {
+  dbQuery.mockResolvedValueOnce([{ creatorId }]);
 }
 
 function mockParticipantFound() {
-  prisma.participation.findUnique.mockResolvedValue({ userId: USER_ID, eventId: EVENT_ID });
+  dbQuery.mockResolvedValueOnce([{ 1: 1 }]);
 }
 
-function mockMessage(overrides: object = {}) {
-  return {
-    id: 'msg-uuid',
-    content: 'Bonjour',
-    eventId: EVENT_ID,
-    senderId: USER_ID,
-    createdAt: new Date('2024-01-01T00:00:00Z'),
-    sender: SENDER,
-    ...overrides,
-  };
+function mockParticipantNotFound() {
+  dbQuery.mockResolvedValueOnce([]);
 }
 
 function setupBeforeEach() {
   beforeEach(async () => {
-    prisma = {
-      event: { findUnique: jest.fn() },
-      participation: { findUnique: jest.fn() },
-      message: { findMany: jest.fn(), create: jest.fn() },
-    };
+    dbQuery = jest.fn();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MessagesService,
-        { provide: PrismaService, useValue: prisma },
+        { provide: DatabaseService, useValue: { query: dbQuery, execute: jest.fn() } },
       ],
     }).compile();
 
@@ -53,8 +54,9 @@ function describeGetHistory() {
   describe('getHistory', () => {
     it('should return formatted messages when user is participant', async () => {
       mockEventFound();
+      mockCreatorCheck('other-user');
       mockParticipantFound();
-      prisma.message.findMany.mockResolvedValue([mockMessage()]);
+      dbQuery.mockResolvedValueOnce([baseMessageRow]);
 
       const result = await service.getHistory(EVENT_ID, USER_ID);
 
@@ -67,33 +69,42 @@ function describeGetHistory() {
       });
     });
 
+    it('should return formatted messages when user is creator', async () => {
+      mockEventFound();
+      mockCreatorCheck(USER_ID);
+      dbQuery.mockResolvedValueOnce([baseMessageRow]);
+
+      const result = await service.getHistory(EVENT_ID, USER_ID);
+
+      expect(result).toHaveLength(1);
+    });
+
     it('should throw NotFoundException if event not found', async () => {
-      prisma.event.findUnique.mockResolvedValue(null);
+      dbQuery.mockResolvedValueOnce([]);
 
       await expect(service.getHistory(EVENT_ID, USER_ID)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if user is not participant', async () => {
       mockEventFound();
-      prisma.participation.findUnique.mockResolvedValue(null);
+      mockCreatorCheck('other-user');
+      mockParticipantNotFound();
 
       await expect(service.getHistory(EVENT_ID, USER_ID)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should pass cursor to prisma query', async () => {
-      mockEventFound();
-      mockParticipantFound();
-      prisma.message.findMany.mockResolvedValue([]);
-
+    it('should pass cursor to query when provided', async () => {
       const cursor = '2024-01-01T00:00:00.000Z';
+      mockEventFound();
+      mockCreatorCheck('other-user');
+      mockParticipantFound();
+      dbQuery.mockResolvedValueOnce([]);
+
       await service.getHistory(EVENT_ID, USER_ID, 10, cursor);
 
-      expect(prisma.message.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { eventId: EVENT_ID, createdAt: { lt: new Date(cursor) } },
-          take: 10,
-        }),
-      );
+      const lastCall = dbQuery.mock.calls.at(-1);
+      expect(lastCall[0]).toContain('created_at < $3');
+      expect(lastCall[1]).toContain(cursor);
     });
   });
 }
@@ -102,28 +113,25 @@ function describeSaveMessage() {
   describe('saveMessage', () => {
     it('should save and return formatted message', async () => {
       mockEventFound();
+      mockCreatorCheck('other-user');
       mockParticipantFound();
-      prisma.message.create.mockResolvedValue(mockMessage());
+      dbQuery.mockResolvedValueOnce([baseMessageRow]);
 
       const result = await service.saveMessage(EVENT_ID, USER_ID, 'Bonjour');
 
       expect(result).toMatchObject({ content: 'Bonjour', senderName: 'Alice' });
-      expect(prisma.message.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: { eventId: EVENT_ID, senderId: USER_ID, content: 'Bonjour' },
-        }),
-      );
     });
 
     it('should throw NotFoundException if event not found', async () => {
-      prisma.event.findUnique.mockResolvedValue(null);
+      dbQuery.mockResolvedValueOnce([]);
 
       await expect(service.saveMessage(EVENT_ID, USER_ID, 'Bonjour')).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if user is not participant', async () => {
       mockEventFound();
-      prisma.participation.findUnique.mockResolvedValue(null);
+      mockCreatorCheck('other-user');
+      mockParticipantNotFound();
 
       await expect(service.saveMessage(EVENT_ID, USER_ID, 'Bonjour')).rejects.toThrow(ForbiddenException);
     });

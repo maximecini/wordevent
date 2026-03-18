@@ -4,18 +4,16 @@
  * Les sous-services sont mockés.
  */
 import { Test, TestingModule } from '@nestjs/testing';
-import { Role } from '@prisma/client';
 import { EventsService } from './events.service';
 import { EventsCrudService } from './services/events-crud.service';
 import { EventsGeoService } from './services/events-geo.service';
 import { EventsGateway } from './events.gateway';
-import { EventVisibility } from '@prisma/client';
 import { EventResponse } from './events.types';
 
 const mockEvent: EventResponse = {
-  id: 'evt-1', title: 'Test', description: null,
-  lat: 48.85, lng: 2.35, capacity: 10, participantCount: 0,
-  visibility: EventVisibility.PUBLIC,
+  id: 'evt-1', title: 'Test', description: null, imageUrl: null, address: null,
+  lat: 48.85, lng: 2.35, capacity: 10, participantCount: 0, isParticipant: false,
+  visibility: 'PUBLIC', category: 'OTHER',
   startAt: new Date(), endAt: new Date(),
   creatorId: 'user-1', createdAt: new Date(),
 };
@@ -24,7 +22,7 @@ const mockCrud = {
   create: jest.fn(), findById: jest.fn(),
   update: jest.fn(), remove: jest.fn(),
 };
-const mockGeo = { findNearby: jest.fn() };
+const mockGeo = { findAll: jest.fn(), findNearby: jest.fn() };
 const mockGateway = { emitCreated: jest.fn(), emitUpdated: jest.fn(), emitDeleted: jest.fn() };
 
 let service: EventsService;
@@ -47,14 +45,14 @@ function setupBeforeEach() {
 
 function describeCreate() {
   describe('create', () => {
-    /** Délègue la création à EventsCrudService */
-    it('should delegate to EventsCrudService.create', async () => {
+    it('should delegate to EventsCrudService.create and emit', async () => {
       mockCrud.create.mockResolvedValue(mockEvent);
       const dto = { title: 'Test', lat: 48.85, lng: 2.35, capacity: 10, startAt: new Date(), endAt: new Date() };
 
       const result = await service.create('user-1', dto as any);
 
       expect(mockCrud.create).toHaveBeenCalledWith('user-1', dto);
+      expect(mockGateway.emitCreated).toHaveBeenCalledWith(mockEvent);
       expect(result).toEqual(mockEvent);
     });
   });
@@ -62,7 +60,6 @@ function describeCreate() {
 
 function describeFindNearby() {
   describe('findNearby', () => {
-    /** Délègue la recherche géospatiale à EventsGeoService */
     it('should delegate to EventsGeoService.findNearby', async () => {
       mockGeo.findNearby.mockResolvedValue([mockEvent]);
       const dto = { lat: 48.85, lng: 2.35 };
@@ -77,11 +74,13 @@ function describeFindNearby() {
 
 function describeRemove() {
   describe('remove', () => {
-    /** Délègue la suppression à EventsCrudService */
-    it('should delegate to EventsCrudService.remove', async () => {
+    it('should delegate to EventsCrudService.remove and emit', async () => {
       mockCrud.remove.mockResolvedValue(undefined);
-      await service.remove('user-1', 'evt-1', Role.USER);
-      expect(mockCrud.remove).toHaveBeenCalledWith('user-1', 'evt-1', Role.USER);
+
+      await service.remove('user-1', 'evt-1', 'USER');
+
+      expect(mockCrud.remove).toHaveBeenCalledWith('user-1', 'evt-1', 'USER');
+      expect(mockGateway.emitDeleted).toHaveBeenCalledWith('evt-1');
     });
   });
 }

@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
-import { Provider } from '@prisma/client';
+import { Provider } from '../../common/types/enums';
 
 interface FacebookDebugResponse {
   data: {

@@ -1,10 +1,33 @@
 # wordevent — Contexte projet pour Claude
 
 ## Projet
-Application mobile — stack à définir.
+Application backend — API REST + temps réel.
 Créateur solo : rcini-ha.
 
 ## Mode de travail
+
+### Réécriture obligatoire du prompt avant toute tâche
+
+**Avant de traiter une demande, Claude doit systématiquement :**
+
+1. **Lancer un agent général (general-purpose)** chargé de réécrire et clarifier le prompt reçu :
+   - Reformuler la demande en termes clairs et techniques
+   - Identifier les sujets, contextes et sous-tâches distincts
+   - Retourner un prompt structuré et sans ambiguïté
+
+2. **Si plusieurs sujets ou contextes sont détectés** → diviser en autant d'agents spécialisés, un par contexte :
+   - Chaque agent traite un sujet unique et indépendant
+   - Les agents parallèles sont lancés en même temps si les sujets sont indépendants
+   - Les agents séquentiels sont lancés dans l'ordre si l'un dépend de l'autre
+
+> **Règle** : 1 contexte = 1 agent. Ne jamais mélanger deux sujets dans un seul agent.
+
+3. **Lancer un agent Plan (architecture)** après la réécriture du prompt, avant toute implémentation :
+   - Analyse l'impact architectural de la demande (fichiers concernés, modules touchés, dépendances)
+   - Produit un plan précis : fichiers à créer/modifier, ordre des étapes, interfaces entre modules
+   - Ce plan est soumis à rcini-ha pour validation avant de coder quoi que ce soit
+
+> **Ordre obligatoire** : agent réécriture → agent architecture → validation rcini-ha → implémentation
 
 ### Multi-agent obligatoire pour les tâches complexes
 Pour toute tâche non triviale, utilise des agents spécialisés en parallèle :
@@ -14,17 +37,39 @@ Pour toute tâche non triviale, utilise des agents spécialisés en parallèle :
 
 Ne code jamais directement une feature complexe sans passer par Plan d'abord.
 
+### Règle absolue — toutes les commandes dans Docker
+
+**Pas de sudo sur la machine hôte. Pas d'accès direct à l'environnement local.**
+Toutes les commandes doivent être exécutées dans le conteneur Docker approprié :
+
+```bash
+# Installer une librairie
+docker compose exec backend npm install <package>
+
+# Lancer un script, une migration, un seed
+docker compose exec backend npm run <script>
+
+# Lancer n'importe quelle commande node/npx
+docker compose exec backend npx <command>
+```
+
+> **Ne jamais suggérer** `npm install`, `npx`, `node` ou toute autre commande directement sur la machine hôte.
+
 ### Workflow standard
 1. Lire `IDEES.md` si la tâche touche aux fonctionnalités
 2. Planifier avec un agent Plan
-3. Implémenter avec des agents parallèles si les tâches sont indépendantes
-4. **Écrire les tests unitaires** après chaque service/module
+3. **Lancer un agent dédié pour écrire les tests unitaires** avant d'implémenter (TDD)
+4. Implémenter avec des agents parallèles si les tâches sont indépendantes
 5. Vérifier avec un agent Explore
 
 ## Tests — Règles obligatoires
 
-### Principe
-**Toujours écrire des tests unitaires après chaque service codé.** Pas de feature sans tests.
+### Principe — TDD obligatoire
+**Les tests unitaires sont écrits AVANT le code d'implémentation.** Un agent dédié est lancé pour rédiger les specs (`*.spec.ts`) sur la base du plan architectural, avant qu'un seul fichier de service soit créé.
+
+> **Ordre impératif** : plan validé → agent tests → tests écrits → agent implémentation → code
+
+Pas de feature sans tests. Pas de code avant les tests.
 
 ### Ce qu'on teste (backend)
 | Quoi | Type | Outil |
@@ -35,12 +80,12 @@ Ne code jamais directement une feature complexe sans passer par Plan d'abord.
 
 ### Ce qu'on NE teste PAS
 - Les controllers (couverts par les e2e)
-- Prisma directement (toujours mocké dans les tests unitaires)
+- `DatabaseService` directement (toujours mocké dans les tests unitaires)
 - Les DTOs (validés par class-validator, pas besoin de tester)
 
 ### Conventions
 - Fichier de test : `*.spec.ts` à côté du fichier testé
-- Toujours mocker `PrismaService` dans les tests unitaires
+- Toujours mocker `DatabaseService` dans les tests unitaires
 - Nommer les tests : `describe('ServiceName')` > `describe('methodName')` > `it('should ...')`
 - Un test = un comportement précis
 
@@ -101,53 +146,57 @@ docker compose exec backend npm run test:watch
 
 | Couche | Techno |
 |--------|--------|
-| Mobile | React Native + Expo |
-| Maps | react-native-maps |
 | Backend | NestJS |
 | BDD | PostgreSQL + PostGIS |
-| ORM | Prisma |
+| SQL | Raw SQL pur — pg (node-postgres) |
 | Temps réel | Socket.IO |
 | Auth | JWT + Passport |
 | Hosting DB | PostgreSQL + PostGIS en conteneur Docker |
 
-- Langage : TypeScript partout (front + back)
-- Cible : iOS + Android
+- Langage : TypeScript (backend)
 - Gestionnaire de paquets : npm
 
 > **Règle absolue** : toutes les installations de packages se font **dans le conteneur Docker**, jamais sur la machine hôte.
 > ```bash
-> # Mobile
-> docker compose exec mobile npx expo install <package>
-> docker compose exec mobile npm install <package>
 > # Backend
 > docker compose exec backend npm install <package>
 > ```
 
+> **Règle absolue** : ne jamais éditer `package.json` manuellement pour ajouter ou modifier une version. Toujours utiliser `npm install` qui résout et inscrit automatiquement la dernière version compatible.
+> ```bash
+> # Installer un package (dernière version compatible)
+> docker compose exec backend npm install <package>
+>
+> # Forcer la toute dernière version
+> docker compose exec backend npm install <package>@latest
+>
+> # Mettre à jour TOUS les packages à la dernière version (majeure incluse)
+> docker compose exec backend npx npm-check-updates -u
+> docker compose exec backend npm install
+> ```
+
 ## Commandes utiles (à compléter)
 ```bash
-# backend
-cd backend && npm run start:dev
-
-# mobile
-cd mobile && npx expo start
+# backend (dans Docker)
+docker compose exec backend npm run start:dev
 
 # Docker — lancer tous les services
 docker compose up
 
-# Connexion téléphone via WiFi (même réseau)
-# 1. Vérifier que LOCAL_IP=10.16.3.1 dans .env correspond à l'IP de la machine
-# 2. Lancer les services
-docker compose up
-# 3. Scanner le QR code affiché par Expo Go directement
+# Migrations
+docker compose exec backend npm run migrate
+
+# Seed
+docker compose exec backend npm run seed
 ```
 
 ## Sécurité — Règle fondamentale
 
-**Tout ce qui vient du front doit être vérifié côté back.** Sans exception.
+**Tout ce qui vient du client doit être vérifié côté back.** Sans exception.
 
-> **Règle absolue** : quand Claude vérifie une logique ou une condition côté front (mobile), il doit **toujours** vérifier que la même logique est appliquée côté back (NestJS). Ne jamais faire confiance à l'utilisateur. Le front peut être contourné, manipulé, ou modifié — seul le backend fait autorité.
+> **Règle absolue** : seul le backend fait autorité. Le client peut être contourné, manipulé, ou modifié — toute logique de sécurité doit être vérifiée côté NestJS.
 
-| Ce qui vient du front | Ce qu'on vérifie côté back |
+| Ce qui vient du client | Ce qu'on vérifie côté back |
 |-----------------------|---------------------------|
 | ID d'une ressource (event, user…) | L'entité existe en DB |
 | Ownership (créateur, owner) | `creatorId === req.user.id` ou rôle ADMIN |
@@ -247,12 +296,9 @@ pandoc docs/*.md -o wordevent-doc.pdf
 |-----------|-------|------|
 | `db` | `postgis/postgis:16-3.4-alpine` | PostgreSQL + PostGIS — données géospatiales |
 | `nginx` | `nginx:alpine` | Reverse proxy — ports 8080/4443 |
-| `backend` | `node:18-alpine` | NestJS API + Socket.IO |
-| `mobile` | `node:18-alpine` | Expo Metro bundler (dev uniquement) |
+| `backend` | `node:20-alpine` | NestJS API + Socket.IO |
 
 ### Notes importantes
-- Expo Metro bundler tourne dans Docker en dev, mais l'app s'exécute sur le téléphone/émulateur — le device doit pouvoir atteindre l'IP de la machine hôte
-- En prod, le conteneur mobile n'existe pas (l'app est buildée et distribuée via les stores)
 - Nginx proxy `/api` → NestJS, `/socket.io` → NestJS
 
 ### Commandes Docker
@@ -272,7 +318,7 @@ docker compose logs -f backend
 ### Règles de découpage — OBLIGATOIRES
 - **1 responsabilité = 1 fichier** — jamais de logique mélangée
 - **Jamais de code métier dans un controller** — tout passe par le service
-- **Jamais de requête Prisma dans un controller** — uniquement dans les services
+- **Jamais de requête SQL dans un controller** — uniquement dans les services
 - Chaque module est autonome et indépendant
 - Les helpers/utils partagés vont dans `src/common/`
 
@@ -286,7 +332,6 @@ docker compose logs -f backend
 | Controller | 100 lignes | Extraire dans le service |
 | Service simple | 200 lignes | Découper en sous-services |
 | Service complexe | 300 lignes | Créer un sous-dossier `services/` |
-| Composant React Native | 200 lignes | Extraire des sous-composants |
 
 - **La vraie règle** : si le fichier n'est pas compréhensible en 30 secondes → trop long, on découpe
 - **Quand un service devient trop grand** → le découper en sous-services :
@@ -320,9 +365,9 @@ backend/src/
 │   └── helpers/
 │       └── geo.helper.ts          # makePoint, serializePoint (PostGIS)
 │
-├── prisma/                        # Module Prisma global
-│   ├── prisma.module.ts
-│   └── prisma.service.ts
+├── database/                      # Module base de données (pg)
+│   ├── database.module.ts
+│   └── database.service.ts        # Pool pg, requêtes SQL brutes
 │
 ├── auth/                          # Module authentification
 │   ├── auth.module.ts
@@ -384,172 +429,36 @@ backend/src/
 │
 ├── app.module.ts
 └── main.ts
+
+backend/db/                        # SQL brut — hors src/
+├── migrations/                    # Fichiers SQL de migration (nommés 001_xxx.sql, etc.)
+├── migrate.ts                     # Script d'exécution des migrations
+└── seed.ts                        # Données initiales (compte admin, etc.)
+
+### Règle migrations — OBLIGATOIRE
+
+**Toute modification du schéma DB = un nouveau fichier de migration.**
+
+- `001_init.sql` — schéma initial complet (ne jamais modifier)
+- `002_xxx.sql`, `003_xxx.sql`… — chaque évolution du schéma est un fichier séparé
+- **Jamais modifier un fichier de migration existant** — toujours créer un nouveau fichier
+- Le nom du fichier décrit ce qu'il fait : `002_add_refresh_token_updated_at.sql`
+- Le script `migrate.ts` détecte et applique automatiquement les nouveaux fichiers (idempotent via table `_migrations`)
+
+```bash
+# Appliquer les migrations
+docker compose exec backend npm run migrate
 ```
-
-### Mobile — structure React Native
-
 ```
-mobile/src/
-│
-├── api/                           # Couche réseau
-│   ├── client.ts                  # Instance axios + intercepteurs
-│   ├── socket.ts                  # Singleton Socket.IO
-│   └── endpoints/
-│       ├── auth.api.ts
-│       ├── events.api.ts
-│       ├── participations.api.ts
-│       ├── invitations.api.ts
-│       ├── messages.api.ts
-│       ├── places.api.ts
-│       └── users.api.ts
-│
-├── store/                         # État global Zustand
-│   ├── auth.store.ts
-│   ├── events.store.ts
-│   ├── invitations.store.ts
-│   ├── messages.store.ts
-│   └── places.store.ts
-│
-├── navigation/
-│   ├── RootNavigator.tsx
-│   ├── AuthNavigator.tsx
-│   └── AppNavigator.tsx           # Tab bar principale
-│
-├── screens/
-│   ├── auth/
-│   │   ├── LoginScreen.tsx
-│   │   └── RegisterScreen.tsx
-│   ├── map/
-│   │   └── MapScreen.tsx
-│   ├── invitations/
-│   │   └── InvitationsScreen.tsx
-│   ├── chat/
-│   │   └── ChatScreen.tsx
-│   └── profile/
-│       └── ProfileScreen.tsx
-│
-├── components/                    # Composants réutilisables
-│   ├── map/
-│   │   ├── EventMarker.tsx
-│   │   ├── PoiMarker.tsx
-│   │   ├── EventDetailSheet.tsx
-│   │   ├── CreateEventSheet.tsx
-│   │   └── CreatePoiSheet.tsx
-│   ├── chat/
-│   │   └── MessageBubble.tsx
-│   ├── invitations/
-│   │   └── InvitationCard.tsx
-│   └── common/
-│       ├── Button.tsx
-│       └── Input.tsx
-│
-├── hooks/                         # Hooks custom
-│   ├── useSocket.ts
-│   ├── useLocation.ts
-│   └── useNearbyEvents.ts
-│
-├── types/                         # Types TypeScript
-│   ├── event.types.ts
-│   ├── user.types.ts
-│   ├── message.types.ts
-│   └── place.types.ts
-│
-└── utils/
-    ├── geo.utils.ts               # Calculs distance, format coords
-    └── date.utils.ts
-```
-
-### Règles composants React Native — OBLIGATOIRES
-
-#### 1. Responsabilité unique
-**1 composant = 1 rôle.** Si tu dois mettre "et" dans la description → trop gros, découper.
-```
-❌ EventCardWithModalAndActions
-✅ EventCard  +  EventModal  +  EventActions
-```
-
-#### 2. Props typées — toujours
-Toujours un `type Props` explicite en haut du fichier, jamais de `any` :
-```tsx
-type Props = {
-  label: string;
-  onPress: () => void;
-  onClose?: () => void;  // optionnel avec ?
-};
-export function MyComponent({ label, onPress, onClose }: Props) { ... }
-```
-
-#### 3. Pas de logique dans le JSX
-Calculs, filtres, conditions → hors du `return` :
-```tsx
-// ❌
-return <Text>{items.filter(i => i.active).length > 0 ? 'oui' : 'non'}</Text>
-// ✅
-const hasActive = items.some(i => i.active);
-return <Text>{hasActive ? 'oui' : 'non'}</Text>
-```
-
-#### 4. Les hooks restent dans les screens
-Les composants reçoivent des **données via props**, ils ne fetchent pas eux-mêmes.
-- **Screen** → lit le store, fetche, passe les données en props
-- **Composant** → reçoit des props, affiche, émet des callbacks
-
-Exceptions acceptées : `useState` pour état UI local (toggle, animation), `useRef`.
-
-#### 5. Callbacks stables
-```tsx
-// ❌ fonction recréée à chaque render
-onPress={() => handleSelect(item)}
-// ✅
-const handlePress = useCallback(() => handleSelect(item), [item]);
-```
-
-#### 6. `useMemo` pour les calculs lourds
-```tsx
-const visibleItems = useMemo(() => items.filter(i => i.active), [items]);
-```
-
-#### 7. Composant complexe → sous-dossier
-Quand un composant a besoin de sous-composants propres :
-```
-components/map/event-detail/
-├── EventDetailSheet.tsx    # orchestrateur — exporte le composant principal
-├── EventDetailHeader.tsx
-└── EventDetailActions.tsx
-```
-
-#### 8. Séparation logique — 1 logique = 1 fichier
-Chaque responsabilité dans son propre fichier, **sans exception** :
-
-| Responsabilité | Fichier |
-|---------------|---------|
-| Appels API | `api/endpoints/xxx.api.ts` |
-| État global | `store/xxx.store.ts` |
-| Logique réutilisable | `hooks/useXxx.ts` |
-| Calculs / transformations | `utils/xxx.utils.ts` |
-| Types TypeScript | `types/xxx.types.ts` |
-| Affichage | `components/xxx/Xxx.tsx` |
-| Orchestration (screen) | `screens/xxx/XxxScreen.tsx` |
-
-**Jamais de fetch dans un composant.** Jamais de calcul métier dans un screen. Jamais de style inline complexe — utiliser `StyleSheet.create`.
-
-#### Checklist avant chaque composant
-- [ ] Il fait **une seule chose**
-- [ ] Il a un **type Props** explicite
-- [ ] Pas de fetch/store dedans (sauf screen)
-- [ ] Moins de **200 lignes**
-- [ ] Callbacks dans `useCallback`
-- [ ] Pas de logique dans le `return`
-- [ ] Sa logique réutilisable est dans un `hook` ou `util` séparé
 
 ### Règle nommage
 - Fichiers backend : `kebab-case` (ex: `jwt-auth.guard.ts`)
-- Fichiers mobile : `PascalCase` pour composants/écrans, `camelCase` pour le reste
 - DTOs : toujours suffixés `.dto.ts`
 - Guards : toujours suffixés `.guard.ts`
 - Strategies : toujours suffixées `.strategy.ts`
 
 ## Décisions d'architecture
-- Monorepo : `mobile/` + `backend/` dans le même repo
+- Monorepo : `backend/` dans le même repo
 - Docker Compose pour orchestrer les services en dev
 - Alpine pour toutes les images (légèreté)
+- Raw SQL pur avec `pg` (node-postgres) — pas d'ORM

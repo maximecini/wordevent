@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as appleSignin from 'apple-signin-auth';
 import { UsersService } from '../../users/users.service';
-import { Provider } from '@prisma/client';
+import { Provider } from '../../common/types/enums';
 
 @Injectable()
 export class AppleAuthService {

@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import { EventsCrudService } from './services/events-crud.service';
 import { EventsGeoService } from './services/events-geo.service';
 import { EventsGateway } from './events.gateway';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { FindNearbyDto } from './dto/find-nearby.dto';
 import { EventResponse } from './events.types';
+
+type UserRole = 'USER' | 'ADMIN';
 
 /**
  * Service orchestrateur des événements.
@@ -24,6 +26,11 @@ export class EventsService {
   /** @see EventsGeoService.findAll */
   findAll(userId: string): Promise<EventResponse[]> {
     return this.geo.findAll(userId);
+  }
+
+  /** @see EventsGeoService.findNearby */
+  findNearby(userId: string, dto: FindNearbyDto): Promise<EventResponse[]> {
+    return this.geo.findNearby(userId, dto);
   }
 
   /**
@@ -45,7 +52,7 @@ export class EventsService {
    * Met à jour un événement et notifie la room.
    * @see EventsCrudService.update
    */
-  async update(userId: string, id: string, dto: UpdateEventDto, role: Role): Promise<EventResponse> {
+  async update(userId: string, id: string, dto: UpdateEventDto, role: UserRole): Promise<EventResponse> {
     const event = await this.crud.update(userId, id, dto, role);
     this.gateway.emitUpdated(event);
     return event;
@@ -55,7 +62,7 @@ export class EventsService {
    * Supprime un événement et notifie la room.
    * @see EventsCrudService.remove
    */
-  async remove(userId: string, id: string, role: Role): Promise<void> {
+  async remove(userId: string, id: string, role: UserRole): Promise<void> {
     await this.crud.remove(userId, id, role);
     this.gateway.emitDeleted(id);
   }

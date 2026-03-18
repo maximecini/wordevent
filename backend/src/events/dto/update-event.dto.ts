@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { EventVisibility } from '@prisma/client';
+import { EventVisibility } from '../../common/types/enums';
 import { Type } from 'class-transformer';
 import {
   IsString, IsOptional, IsNumber,
@@ -9,6 +9,9 @@ import {
 export class UpdateEventDto {
   @ApiProperty({ required: false }) @IsString() @IsOptional()
   title?: string;
+
+  @ApiProperty({ required: false }) @IsString() @IsOptional()
+  address?: string;
 
   @ApiProperty({ required: false }) @IsString() @IsOptional()
   description?: string;

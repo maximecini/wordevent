@@ -1,12 +1,20 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { DatabaseService } from '../database/database.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { Provider } from '@prisma/client';
+import { DatabaseError } from 'pg';
 import * as bcrypt from 'bcrypt';
+
+const PUBLIC_FIELDS = `id, email, name, avatar, role,
+  created_at AS "createdAt"`;
+
+const FULL_FIELDS = `id, email, name, avatar, role, password,
+  provider, provider_id AS "providerId",
+  refresh_token AS "refreshToken",
+  created_at AS "createdAt", updated_at AS "updatedAt"`;
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly db: DatabaseService) {}
 
   /**
    * Crée un nouvel utilisateur avec email/password.
@@ -16,14 +24,21 @@ export class UsersService {
    * @throws ConflictException si l'email est déjà utilisé
    */
   async create(dto: CreateUserDto) {
-    const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (exists) throw new ConflictException('Email already in use');
-
     const password = await bcrypt.hash(dto.password, 12);
-    return this.prisma.user.create({
-      data: { email: dto.email, password, name: dto.name },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
-    });
+    try {
+      const rows = await this.db.query(
+        `INSERT INTO users (email, password, name)
+         VALUES ($1, $2, $3)
+         RETURNING ${PUBLIC_FIELDS}`,
+        [dto.email, password, dto.name],
+      );
+      return rows[0];
+    } catch (err) {
+      if (err instanceof DatabaseError && err.code === '23505') {
+        throw new ConflictException('Email already in use');
+      }
+      throw err;
+    }
   }
 
   /**
@@ -33,7 +48,11 @@ export class UsersService {
    * @returns Utilisateur complet ou null si introuvable
    */
   async findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+    const rows = await this.db.query(
+      `SELECT ${FULL_FIELDS} FROM users WHERE email = $1`,
+      [email],
+    );
+    return rows[0] ?? null;
   }
 
   /**
@@ -44,12 +63,12 @@ export class UsersService {
    * @throws NotFoundException si l'utilisateur n'existe pas
    */
   async findById(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: { id: true, email: true, name: true, avatar: true, role: true, createdAt: true },
-    });
-    if (!user) throw new NotFoundException('User not found');
-    return user;
+    const rows = await this.db.query(
+      `SELECT ${PUBLIC_FIELDS} FROM users WHERE id = $1`,
+      [id],
+    );
+    if (!rows[0]) throw new NotFoundException('User not found');
+    return rows[0];
   }
 
   /**
@@ -61,13 +80,17 @@ export class UsersService {
    * @param providerId - Identifiant unique chez le provider
    * @returns Utilisateur existant ou nouvellement créé
    */
-  async findOrCreateOAuth(email: string, name: string, provider: Provider, providerId: string) {
-    const existing = await this.prisma.user.findUnique({ where: { email } });
+  async findOrCreateOAuth(email: string, name: string, provider: string, providerId: string) {
+    const existing = await this.findByEmail(email);
     if (existing) return existing;
 
-    return this.prisma.user.create({
-      data: { email, name, provider, providerId },
-    });
+    const rows = await this.db.query(
+      `INSERT INTO users (email, name, provider, provider_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING ${FULL_FIELDS}`,
+      [email, name, provider, providerId],
+    );
+    return rows[0];
   }
 
   /**
@@ -77,10 +100,11 @@ export class UsersService {
    * @returns Profil public ou null si introuvable
    */
   async searchByEmail(email: string) {
-    return this.prisma.user.findUnique({
-      where: { email },
-      select: { id: true, name: true, avatar: true },
-    });
+    const rows = await this.db.query(
+      `SELECT id, name, avatar FROM users WHERE email = $1`,
+      [email],
+    );
+    return rows[0] ?? null;
   }
 
   /**
@@ -89,10 +113,9 @@ export class UsersService {
    * @returns Liste de profils publics (sans password ni refreshToken)
    */
   async findAll() {
-    return this.prisma.user.findMany({
-      select: { id: true, email: true, name: true, avatar: true, role: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.db.query(
+      `SELECT ${PUBLIC_FIELDS} FROM users ORDER BY created_at DESC`,
+    );
   }
 
   /**
@@ -102,9 +125,11 @@ export class UsersService {
    * @throws NotFoundException si l'utilisateur n'existe pas
    */
   async remove(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('User not found');
-    await this.prisma.user.delete({ where: { id } });
+    const result = await this.db.execute(
+      `DELETE FROM users WHERE id = $1`,
+      [id],
+    );
+    if (result.rowCount === 0) throw new NotFoundException('User not found');
   }
 
   /**
@@ -115,6 +140,9 @@ export class UsersService {
    */
   async updateRefreshToken(id: string, token: string | null) {
     const hashed = token ? await bcrypt.hash(token, 10) : null;
-    await this.prisma.user.update({ where: { id }, data: { refreshToken: hashed } });
+    await this.db.execute(
+      `UPDATE users SET refresh_token = $1 WHERE id = $2`,
+      [hashed, id],
+    );
   }
 }

@@ -9,7 +9,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleAuthService } from './google-auth.service';
 import { UsersService } from '../../users/users.service';
-import { Provider } from '@prisma/client';
+import { Provider } from '../../common/types/enums';
 import { OAuth2Client } from 'google-auth-library';
 
 jest.mock('google-auth-library');

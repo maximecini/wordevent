@@ -2,6 +2,8 @@ import { Client } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const isDryRun = process.argv.includes('--dry-run');
+
 async function migrate(): Promise<void> {
   const client = new Client({
     host: process.env.DB_HOST ?? 'localhost',
@@ -12,6 +14,8 @@ async function migrate(): Promise<void> {
   });
 
   await client.connect();
+
+  if (isDryRun) console.log('[dry-run] Aucune modification ne sera appliquée.\n');
 
   try {
     await client.query(`
@@ -28,13 +32,22 @@ async function migrate(): Promise<void> {
       .filter((f) => f.endsWith('.sql'))
       .sort();
 
+    let pendingCount = 0;
+
     for (const file of files) {
       const { rowCount } = await client.query(
         'SELECT 1 FROM _migrations WHERE filename = $1',
         [file],
       );
+
       if (rowCount && rowCount > 0) {
-        console.log(`[skip] ${file}`);
+        console.log(`[skip]    ${file}`);
+        continue;
+      }
+
+      if (isDryRun) {
+        console.log(`[pending] ${file}`);
+        pendingCount++;
         continue;
       }
 
@@ -47,15 +60,23 @@ async function migrate(): Promise<void> {
           [file],
         );
         await client.query('COMMIT');
-        console.log(`[ok]   ${file}`);
+        console.log(`[ok]      ${file}`);
       } catch (err) {
         await client.query('ROLLBACK');
-        console.error(`[fail] ${file}`, err);
+        console.error(`[fail]    ${file}`, err);
         throw err;
       }
     }
 
-    console.log('Migrations terminées.');
+    if (isDryRun) {
+      console.log(
+        pendingCount === 0
+          ? '\nTout est à jour — aucune migration en attente.'
+          : `\n${pendingCount} migration(s) en attente.`,
+      );
+    } else {
+      console.log('Migrations terminées.');
+    }
   } finally {
     await client.end();
   }

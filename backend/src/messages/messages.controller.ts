@@ -2,6 +2,7 @@ import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtUser } from '../common/types/jwt-user.interface';
 
 @UseGuards(JwtAuthGuard)
 @Controller()
@@ -21,7 +22,7 @@ export class MessagesController {
   @Get('events/:id/messages')
   getHistory(
     @Param('id', ParseUUIDPipe) eventId: string,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: JwtUser,
     @Query('limit') limit?: string,
     @Query('cursor') cursor?: string,
   ) {

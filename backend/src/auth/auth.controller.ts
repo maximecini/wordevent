@@ -14,6 +14,7 @@ import { FacebookAuthDto } from './dto/facebook-auth.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { JwtUser } from '../common/types/jwt-user.interface';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -114,7 +115,7 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@CurrentUser() user: any) {
+  me(@CurrentUser() user: JwtUser) {
     return user;
   }
 }

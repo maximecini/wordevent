@@ -1,4 +1,5 @@
-export { EventVisibility, EventCategory } from '../common/types/enums';
+import { EventVisibility, EventCategory } from '../common/types/enums';
+export { EventVisibility, EventCategory };
 
 /** Résultat brut d'une requête PostGIS — lat/lng extraits via ST_Y/ST_X. */
 export interface RawEvent {

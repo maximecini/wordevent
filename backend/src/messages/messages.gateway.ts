@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -16,9 +17,13 @@ import { SendMessageDto } from './dto/send-message.dto';
  * Gateway WebSocket pour le chat en temps réel.
  * Authentifie les connexions via JWT et gère les rooms par event.
  */
-@WebSocketGateway({ namespace: '/chat', cors: { origin: '*' } })
+@WebSocketGateway({
+  namespace: '/chat',
+  cors: { origin: process.env.FRONTEND_URL ?? 'http://localhost:3000' },
+})
 export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
+  private readonly logger = new Logger(MessagesGateway.name);
 
   constructor(
     private readonly jwtService: JwtService,
@@ -40,7 +45,8 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     try {
       const payload = this.jwtService.verify<{ sub: string }>(token);
       client.data.userId = payload.sub;
-    } catch {
+    } catch (err) {
+      this.logger.error('Token JWT invalide à la connexion WebSocket /chat', err);
       client.disconnect();
     }
   }
@@ -100,8 +106,8 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     try {
       const message = await this.messagesService.saveMessage(dto.eventId, userId, dto.content);
       this.server.to(`chat:${dto.eventId}`).emit('chat:message', message);
-    } catch {
-      // ForbiddenException ou NotFoundException : on ignore silencieusement
+    } catch (err) {
+      this.logger.error(`Erreur lors de l'envoi du message sur l'event ${dto.eventId}`, err);
     }
   }
 }

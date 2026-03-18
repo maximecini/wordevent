@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, UseGuards } f
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtUser } from '../common/types/jwt-user.interface';
 import { InvitationsService } from './invitations.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { UpdateInvitationDto } from './dto/update-invitation.dto';
@@ -21,7 +22,7 @@ export class InvitationsController {
   invite(
     @Param('id', ParseUUIDPipe) eventId: string,
     @Body() dto: CreateInvitationDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: JwtUser,
   ) {
     return this.service.create(eventId, dto.invitedUserId, user.id);
   }
@@ -30,7 +31,7 @@ export class InvitationsController {
    * Retourne les invitations PENDING reçues par l'utilisateur connecté.
    */
   @Get('invitations')
-  findPending(@CurrentUser() user: { id: string }) {
+  findPending(@CurrentUser() user: JwtUser) {
     return this.service.findAllPending(user.id);
   }
 
@@ -41,7 +42,7 @@ export class InvitationsController {
   respond(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateInvitationDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: JwtUser,
   ) {
     return this.service.updateStatus(id, dto.status, user.id);
   }

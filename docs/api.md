@@ -28,7 +28,8 @@
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
-| GET | /events | ✅ | Events autour de moi (lat/lng/radius) |
+| GET | /events | ✅ | Tous les événements accessibles |
+| GET | /events/nearby?lat=&lng=&radius= | ✅ | Événements à proximité — triés par distance (max 100, défaut radius 5000 m) |
 | POST | /events | ✅ | Créer un event |
 | GET | /events/:id | ✅ | Détail d'un event |
 | PATCH | /events/:id | ✅ | Modifier son event |

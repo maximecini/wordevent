@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -13,9 +14,13 @@ import { EventResponse } from './events.types';
  * Gateway WebSocket pour les événements en temps réel.
  * Authentifie les connexions via JWT et gère les rooms par event.
  */
-@WebSocketGateway({ namespace: '/events', cors: { origin: '*' } })
+@WebSocketGateway({
+  namespace: '/events',
+  cors: { origin: process.env.FRONTEND_URL ?? 'http://localhost:3000' },
+})
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
+  private readonly logger = new Logger(EventsGateway.name);
 
   constructor(private readonly jwtService: JwtService) {}
 
@@ -35,7 +40,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const payload = this.jwtService.verify<{ sub: string }>(token);
       client.data.userId = payload.sub;
       client.join(`user:${payload.sub}`);
-    } catch {
+    } catch (err) {
+      this.logger.error('Token JWT invalide à la connexion WebSocket /events', err);
       client.disconnect();
     }
   }

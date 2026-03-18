@@ -3,6 +3,7 @@ import {
   Param, Patch, Post, UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtUser } from '../common/types/jwt-user.interface';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
@@ -21,7 +22,7 @@ export class PlacesOfInterestController {
    * @returns Liste des POIs de l'utilisateur dans le rayon
    */
   @Get()
-  findAll(@CurrentUser() user: any) {
+  findAll(@CurrentUser() user: JwtUser) {
     return this.places.findAll(user.id);
   }
 
@@ -33,7 +34,7 @@ export class PlacesOfInterestController {
    * @returns Le POI créé
    */
   @Post()
-  create(@CurrentUser() user: any, @Body() dto: CreatePlaceDto) {
+  create(@CurrentUser() user: JwtUser, @Body() dto: CreatePlaceDto) {
     return this.places.create(user.id, dto);
   }
 
@@ -45,7 +46,7 @@ export class PlacesOfInterestController {
    * @returns Le POI
    */
   @Get(':id')
-  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+  findOne(@CurrentUser() user: JwtUser, @Param('id') id: string) {
     return this.places.findById(id, user.id);
   }
 
@@ -58,7 +59,7 @@ export class PlacesOfInterestController {
    * @returns Le POI mis à jour
    */
   @Patch(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: UpdatePlaceDto) {
+  update(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() dto: UpdatePlaceDto) {
     return this.places.update(id, user.id, dto);
   }
 
@@ -70,7 +71,7 @@ export class PlacesOfInterestController {
    */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@CurrentUser() user: any, @Param('id') id: string) {
+  remove(@CurrentUser() user: JwtUser, @Param('id') id: string) {
     return this.places.remove(id, user.id);
   }
 }

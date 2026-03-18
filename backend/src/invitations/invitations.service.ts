@@ -156,7 +156,7 @@ export class InvitationsService {
   }
 }
 
-interface InvitationRow {
+export interface InvitationRow {
   id: string;
   status: string;
   eventId: string;

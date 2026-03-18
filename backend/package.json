@@ -19,6 +19,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migrate": "ts-node db/migrate.ts",
+    "migrate:dry": "ts-node db/migrate.ts --dry-run",
     "seed": "ts-node db/seed.ts"
   },
   "dependencies": {

@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ParticipationsService } from './participations.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtUser } from '../common/types/jwt-user.interface';
 
 @ApiTags('participations')
 @ApiBearerAuth()
@@ -20,7 +21,7 @@ export class ParticipationsController {
   @ApiOperation({ summary: 'Rejoindre un événement' })
   @Post('join')
   @HttpCode(HttpStatus.NO_CONTENT)
-  join(@CurrentUser() user: any, @Param('eventId') eventId: string) {
+  join(@CurrentUser() user: JwtUser, @Param('eventId') eventId: string) {
     return this.participations.join(user.id, eventId);
   }
 
@@ -33,7 +34,7 @@ export class ParticipationsController {
   @ApiOperation({ summary: 'Quitter un événement' })
   @Delete('leave')
   @HttpCode(HttpStatus.NO_CONTENT)
-  leave(@CurrentUser() user: any, @Param('eventId') eventId: string) {
+  leave(@CurrentUser() user: JwtUser, @Param('eventId') eventId: string) {
     return this.participations.leave(user.id, eventId);
   }
 

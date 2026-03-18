@@ -20,3 +20,10 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime uploads
+uploads/
+files/
+
+# Claude memory
+memory/

@@ -160,6 +160,19 @@ docker compose exec backend npm run test:watch
 > ```bash
 > # Backend
 > docker compose exec backend npm install <package>
+>
+> # Mobile — toujours utiliser expo install (résout les versions compatibles avec le SDK Expo)
+> docker compose exec mobile npx expo install <package>
+> docker compose exec mobile npx expo install --check
+> ```
+
+> **Règle absolue (mobile)** : ne jamais utiliser `npm install` pour le mobile. Toujours passer par `make mobile-install` qui installe ET vérifie la compatibilité automatiquement.
+> ```bash
+> # Installer un package mobile — commande unique obligatoire
+> make mobile-install pkg=<package>
+> # Équivalent à :
+> # docker compose exec mobile npx expo install <package>
+> # docker compose exec mobile npx expo install --check
 > ```
 
 > **Règle absolue** : ne jamais éditer `package.json` manuellement pour ajouter ou modifier une version. Toujours utiliser `npm install` qui résout et inscrit automatiquement la dernière version compatible.
@@ -233,6 +246,19 @@ docker compose exec backend npm run seed
 - **Toujours lire `docs/` avant de coder** — réutiliser les fonctions et modules existants, ne jamais créer de doublon.
 - Avant d'implémenter quoi que ce soit, explorer le codebase avec un agent Explore pour vérifier si ça existe déjà.
 - Avant de coder une feature, mettre à jour le fichier `docs/` correspondant. Après validation, coder. Jamais l'inverse.
+- **Toute fonctionnalité opérationnelle** (testée et fonctionnelle côté backend ET en environnement dev) doit être ajoutée à `docs/features.md` avec son statut ✅.
+
+### Règle — suivi des features opérationnelles
+Dès qu'une feature est validée fonctionnelle (backend + dev), Claude doit mettre à jour `docs/features.md` :
+
+| Champ | Description |
+|-------|-------------|
+| Feature | Nom clair de la fonctionnalité |
+| Module | Module NestJS concerné |
+| Statut | ✅ Fonctionnel / 🚧 En cours / ❌ Bloqué |
+| Date | Date de validation |
+
+> **Règle** : une feature non listée dans `docs/features.md` n'est pas considérée comme livrée.
 
 ### Ordre obligatoire avant chaque implémentation
 1. Lire `docs/architecture.md` — comprendre les modules et relations
@@ -264,7 +290,8 @@ docs/
 ├── architecture.md   — schéma DB, modules, flux globaux
 ├── api.md            — endpoints REST (mis à jour manuellement)
 ├── auth.md           — flux d'authentification
-└── deployment.md     — Docker, variables d'env, démarrage
+├── deployment.md     — Docker, variables d'env, démarrage
+└── features.md       — liste des fonctionnalités opérationnelles (backend + dev)
 ```
 
 ### Outils
@@ -297,6 +324,7 @@ pandoc docs/*.md -o wordevent-doc.pdf
 | `db` | `postgis/postgis:16-3.4-alpine` | PostgreSQL + PostGIS — données géospatiales |
 | `nginx` | `nginx:alpine` | Reverse proxy — ports 8080/4443 |
 | `backend` | `node:20-alpine` | NestJS API + Socket.IO |
+| `mobile` | `node:20-alpine` | React Native + Expo (profile `mobile`, opt-in) |
 
 ### Notes importantes
 - Nginx proxy `/api` → NestJS, `/socket.io` → NestJS
@@ -311,6 +339,13 @@ docker compose up --build backend
 
 # Logs
 docker compose logs -f backend
+
+# Mobile (opt-in via profile)
+make mobile-up
+make mobile-up-build
+make mobile-logs
+make mobile-shell
+make mobile-install pkg=<package>
 ```
 
 ## Architecture des fichiers

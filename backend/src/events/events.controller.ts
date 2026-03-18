@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param,
+  Controller, Get, Post, Patch, Delete, Body, Param, Query,
   UseGuards, HttpCode, HttpStatus, UploadedFile, UseInterceptors, BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -10,8 +10,10 @@ import { randomUUID } from 'crypto';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { FindNearbyDto } from './dto/find-nearby.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtUser } from '../common/types/jwt-user.interface';
 
 const imageStorage = diskStorage({
   destination: './uploads/events',
@@ -36,11 +38,27 @@ export class EventsController {
    * Retourne les événements actifs accessibles à l'utilisateur.
    *
    * @param user - Utilisateur connecté
+   * @returns Liste des événements accessibles
    */
   @ApiOperation({ summary: 'Tous les événements accessibles' })
   @Get()
-  findAll(@CurrentUser() user: any) {
+  findAll(@CurrentUser() user: JwtUser) {
     return this.events.findAll(user.id);
+  }
+
+  /**
+   * Retourne les événements actifs dans un rayon donné autour d'un point géographique.
+   * Seuls les events PUBLIC et les events PRIVATE accessibles à l'utilisateur sont retournés.
+   * Les résultats sont triés par distance croissante (max 100).
+   *
+   * @param user - Utilisateur connecté
+   * @param dto - Coordonnées (lat, lng) et rayon en mètres (défaut : 5000 m)
+   * @returns Liste des événements triés par distance
+   */
+  @ApiOperation({ summary: 'Événements à proximité (géospatial)' })
+  @Get('nearby')
+  findNearby(@CurrentUser() user: JwtUser, @Query() dto: FindNearbyDto) {
+    return this.events.findNearby(user.id, dto);
   }
 
   /**
@@ -66,7 +84,7 @@ export class EventsController {
    */
   @ApiOperation({ summary: 'Créer un événement' })
   @Post()
-  create(@CurrentUser() user: any, @Body() dto: CreateEventDto) {
+  create(@CurrentUser() user: JwtUser, @Body() dto: CreateEventDto) {
     return this.events.create(user.id, dto);
   }
 
@@ -90,7 +108,7 @@ export class EventsController {
    */
   @ApiOperation({ summary: 'Modifier un événement' })
   @Patch(':id')
-  update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: UpdateEventDto) {
+  update(@CurrentUser() user: JwtUser, @Param('id') id: string, @Body() dto: UpdateEventDto) {
     return this.events.update(user.id, id, dto, user.role);
   }
 
@@ -103,7 +121,7 @@ export class EventsController {
   @ApiOperation({ summary: 'Supprimer un événement' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@CurrentUser() user: any, @Param('id') id: string) {
+  remove(@CurrentUser() user: JwtUser, @Param('id') id: string) {
     return this.events.remove(user.id, id, user.role);
   }
 }

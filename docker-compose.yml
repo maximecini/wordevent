@@ -21,6 +21,8 @@ services:
       dockerfile: Dockerfile
     profiles:
       - backend
+    env_file:
+      - ./secrets/jwt.env
     environment:
       NODE_ENV: development
       DB_HOST: db
@@ -28,8 +30,6 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:

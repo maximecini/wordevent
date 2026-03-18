@@ -1,5 +1,6 @@
 # Env
 .env
+secrets/
 client_secret_*.json
 
 # Dependencies

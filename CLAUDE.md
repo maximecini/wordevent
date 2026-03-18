@@ -260,6 +260,19 @@ Dès qu'une feature est validée fonctionnelle (backend + dev), Claude doit mett
 
 > **Règle** : une feature non listée dans `docs/features.md` n'est pas considérée comme livrée.
 
+### Règle — mise à jour obligatoire après chaque implémentation
+
+> **Règle absolue** : dès qu'une nouvelle fonction, méthode publique ou endpoint est implémenté(e), Claude doit **immédiatement** mettre à jour la documentation correspondante — avant de terminer la tâche.
+
+| Ce qui a été fait | Doc à mettre à jour |
+|-------------------|---------------------|
+| Nouvelle feature opérationnelle | `docs/features.md` — ajouter la ligne avec statut ✅ |
+| Nouvel endpoint REST | `docs/api.md` — ajouter la route, méthode, description |
+| Modification de flux auth | `docs/auth.md` |
+| Changement d'architecture / schéma DB | `docs/architecture.md` |
+
+> **Ne jamais** clore une tâche d'implémentation sans avoir mis à jour `docs/`. Une feature non documentée n'est pas livrée.
+
 ### Ordre obligatoire avant chaque implémentation
 1. Lire `docs/architecture.md` — comprendre les modules et relations
 2. Lire `docs/api.md` — vérifier les endpoints existants
@@ -267,6 +280,7 @@ Dès qu'une feature est validée fonctionnelle (backend + dev), Claude doit mett
 4. Mettre à jour `docs/` si nécessaire
 5. Coder
 6. Écrire les tests
+7. **Mettre à jour `docs/features.md` et `docs/api.md`** — obligatoire avant de terminer
 
 ### Commentaires JSDoc — OBLIGATOIRES
 - **Toutes les méthodes publiques** doivent avoir un commentaire JSDoc complet

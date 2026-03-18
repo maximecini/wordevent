@@ -14,7 +14,7 @@ import { PlacesOfInterestModule } from './places-of-interest/places-of-interest.
 @Module({
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['secrets/jwt.env', '.env'] }),
     ThrottlerModule.forRoot([
       { name: 'default', ttl: 60000, limit: 300 },
       { name: 'auth', ttl: 60000, limit: 10 },

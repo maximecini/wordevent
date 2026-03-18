@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "LOCK=\"/home/rcini-ha/Documents/wordevent/.claude/session.lock\"; if [ -f \"$LOCK\" ] && kill -0 \"$(cat $LOCK 2>/dev/null)\" 2>/dev/null; then echo \"{\\\"systemMessage\\\": \\\"ATTENTION : une autre session Claude est deja active sur ce projet (PID $(cat $LOCK)). Eviter de modifier les memes fichiers en meme temps.\\\"}\"; else echo \"{}\"; fi; echo $$ > \"$LOCK\"",
+            "statusMessage": "Vérification sessions actives..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"RAPPEL OBLIGATOIRE : si tu viens dimplementer une nouvelle fonctionnalite ou un nouvel endpoint, mets a jour docs/features.md et docs/api.md MAINTENANT, avant de terminer.\"}'",
+            "statusMessage": "Vérification documentation..."
+          },
+          {
+            "type": "command",
+            "command": "LOCK=\"/home/rcini-ha/Documents/wordevent/.claude/session.lock\"; [ \"$(cat $LOCK 2>/dev/null)\" = \"$$\" ] && rm -f \"$LOCK\" || true"
+          }
+        ]
+      }
+    ]
+  }
+}

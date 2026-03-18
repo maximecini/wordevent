@@ -1,4 +1,4 @@
-.PHONY: up up-build re down build logs logs-backend logs-db logs-nginx migrate seed test test-cov test-watch shell-backend shell-db clean fclean mobile-up mobile-up-build mobile-down mobile-logs mobile-shell mobile-install
+.PHONY: up up-build re down build logs logs-backend logs-db logs-nginx migrate seed test test-json test-cov test-watch shell-backend shell-db clean fclean mobile-up mobile-up-build mobile-down mobile-logs mobile-shell mobile-install
 
 # ── Cycle de vie ──────────────────────────────────────────────────────────────
 
@@ -46,6 +46,10 @@ seed:
 
 test:
 	docker compose exec backend npm test
+
+test-json:
+	docker compose exec backend npm test -- --json --outputFile=/tmp/jest-results.json; \
+	docker compose exec backend cat /tmp/jest-results.json
 
 test-cov:
 	docker compose exec backend npm run test:cov

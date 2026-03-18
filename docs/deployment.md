@@ -14,17 +14,17 @@ make                   # build + démarrage
 
 ## Variables d'environnement
 
+L'application valide les variables requises au démarrage et refuse de booter si l'une manque.
+
+### Requises (throw au boot si absentes)
+
 | Variable | Description | Exemple |
 |----------|-------------|---------|
-| DB_HOST | Hôte PostgreSQL (nom du service Docker) | db |
-| DB_PORT | Port PostgreSQL | 5432 |
 | DB_USER | User PostgreSQL | wordevent |
 | DB_PASSWORD | Password PostgreSQL | wordevent_pass |
 | DB_NAME | Nom de la base | wordevent |
 | JWT_SECRET | Secret de signature JWT (access token) | changeme |
 | JWT_REFRESH_SECRET | Secret de signature refresh token | changeme_refresh |
-| ADMIN_EMAIL | Email du compte admin initial | admin@wordevent.com |
-| ADMIN_PASSWORD | Password du compte admin initial | Admin1234! |
 | GOOGLE_CLIENT_ID | Client ID Google OAuth | xxx.apps.googleusercontent.com |
 | APPLE_CLIENT_ID | Bundle ID Apple | com.wordevent.app |
 | APPLE_TEAM_ID | Team ID Apple Developer | XXXXXXXXXX |
@@ -32,6 +32,22 @@ make                   # build + démarrage
 | APPLE_PRIVATE_KEY | Clé privée Apple (.p8) | -----BEGIN PRIVATE KEY----- |
 | FACEBOOK_APP_ID | App ID Facebook | 123456789 |
 | FACEBOOK_APP_SECRET | App Secret Facebook | abc123... |
+
+### Optionnelles (fallback si absentes)
+
+| Variable | Description | Défaut |
+|----------|-------------|--------|
+| DB_HOST | Hôte PostgreSQL (nom du service Docker) | localhost |
+| DB_PORT | Port PostgreSQL | 5432 |
+| PORT | Port d'écoute NestJS | 3000 |
+| FRONTEND_URL | Origine autorisée pour Socket.IO CORS | http://localhost:3000 |
+
+### Autres (seed uniquement)
+
+| Variable | Description | Exemple |
+|----------|-------------|---------|
+| ADMIN_EMAIL | Email du compte admin initial | admin@wordevent.com |
+| ADMIN_PASSWORD | Password du compte admin initial | Admin1234! |
 
 ## Conteneurs
 

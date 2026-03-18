@@ -1,5 +1,4 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { UsersService } from '../../users/users.service';
 import { Provider } from '../../common/types/enums';
@@ -8,15 +7,11 @@ import { Provider } from '../../common/types/enums';
 export class GoogleAuthService {
   private client: OAuth2Client | null = null;
 
-  constructor(
-    private readonly config: ConfigService,
-    private readonly users: UsersService,
-  ) {}
+  constructor(private readonly users: UsersService) {}
 
   private getClient(): OAuth2Client {
     if (!this.client) {
-      const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
-      this.client = new OAuth2Client(clientId);
+      this.client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     }
     return this.client;
   }
@@ -30,7 +25,7 @@ export class GoogleAuthService {
    * @throws UnauthorizedException si le token est invalide ou malformé
    */
   async verifyAndGetUser(idToken: string) {
-    const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
+    const clientId = process.env.GOOGLE_CLIENT_ID as string;
     const ticket = await this.getClient().verifyIdToken({
       idToken,
       audience: clientId,

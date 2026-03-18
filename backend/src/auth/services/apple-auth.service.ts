@@ -1,15 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import * as appleSignin from 'apple-signin-auth';
 import { UsersService } from '../../users/users.service';
 import { Provider } from '../../common/types/enums';
 
 @Injectable()
 export class AppleAuthService {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly users: UsersService,
-  ) {}
+  constructor(private readonly users: UsersService) {}
 
   /**
    * Vérifie un identityToken Apple et retourne l'utilisateur correspondant.
@@ -23,7 +19,7 @@ export class AppleAuthService {
    */
   async verifyAndGetUser(identityToken: string, fullName?: string) {
     const payload = await appleSignin.verifyIdToken(identityToken, {
-      audience: this.config.getOrThrow<string>('APPLE_CLIENT_ID'),
+      audience: process.env.APPLE_CLIENT_ID as string,
       ignoreExpiration: false,
     }).catch(() => {
       throw new UnauthorizedException('Invalid Apple token');

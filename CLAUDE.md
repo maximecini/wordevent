@@ -6,36 +6,21 @@ Créateur solo : rcini-ha.
 
 ## Mode de travail
 
-### Réécriture obligatoire du prompt avant toute tâche
+### Lecture des messages
 
-**Avant de traiter une demande, Claude doit systématiquement :**
+> **Règle** : toujours interpréter le sens probable du message plutôt que sa forme littérale. Si le sens reste ambigu après interprétation, poser une question courte pour clarifier — jamais reformuler le message à voix haute.
 
-1. **Lancer un agent général (general-purpose)** chargé de réécrire et clarifier le prompt reçu :
-   - Reformuler la demande en termes clairs et techniques
-   - Identifier les sujets, contextes et sous-tâches distincts
-   - Retourner un prompt structuré et sans ambiguïté
+### Agents spécialisés — usage ciblé
 
-2. **Si plusieurs sujets ou contextes sont détectés** → diviser en autant d'agents spécialisés, un par contexte :
-   - Chaque agent traite un sujet unique et indépendant
-   - Les agents parallèles sont lancés en même temps si les sujets sont indépendants
-   - Les agents séquentiels sont lancés dans l'ordre si l'un dépend de l'autre
+Utilise des agents spécialisés quand la tâche le justifie :
+- **Explore agent** — avant de toucher au code sur un module inconnu ou étendu
+- **Plan agent** — pour toute feature qui touche plusieurs fichiers ou modules
+- **General-purpose agent** — pour comparer des librairies, investiguer un bug complexe
 
 > **Règle** : 1 contexte = 1 agent. Ne jamais mélanger deux sujets dans un seul agent.
+> Pour les tâches indépendantes, lancer les agents en parallèle.
 
-3. **Lancer un agent Plan (architecture)** après la réécriture du prompt, avant toute implémentation :
-   - Analyse l'impact architectural de la demande (fichiers concernés, modules touchés, dépendances)
-   - Produit un plan précis : fichiers à créer/modifier, ordre des étapes, interfaces entre modules
-   - Ce plan est soumis à rcini-ha pour validation avant de coder quoi que ce soit
-
-> **Ordre obligatoire** : agent réécriture → agent architecture → validation rcini-ha → implémentation
-
-### Multi-agent obligatoire pour les tâches complexes
-Pour toute tâche non triviale, utilise des agents spécialisés en parallèle :
-- **Explore agent** — pour analyser le codebase avant de toucher au code
-- **Plan agent** — pour concevoir l'architecture avant d'implémenter
-- **General-purpose agent** — pour les recherches, comparaisons de librairies, investigations
-
-Ne code jamais directement une feature complexe sans passer par Plan d'abord.
+Ne code jamais directement une feature qui touche plusieurs modules sans passer par Plan d'abord.
 
 ### Règle absolue — toutes les commandes dans Docker
 
@@ -57,17 +42,21 @@ docker compose exec backend npx <command>
 
 ### Workflow standard
 1. Lire `IDEES.md` si la tâche touche aux fonctionnalités
-2. Planifier avec un agent Plan
-3. **Lancer un agent dédié pour écrire les tests unitaires** avant d'implémenter (TDD)
-4. Implémenter avec des agents parallèles si les tâches sont indépendantes
-5. Vérifier avec un agent Explore
+2. Lire `docs/architecture.md` et `docs/api.md` — comprendre l'existant, éviter les doublons
+3. Lire les JSDoc des services existants — réutiliser ce qui existe
+4. Planifier (agent Plan si multi-fichiers, sinon plan inline) et attendre validation
+5. Écrire les tests (`*.spec.ts`) — TDD obligatoire
+6. Implémenter — agents parallèles si les tâches sont indépendantes
+7. Si schéma DB modifié → créer un fichier `db/migrations/XXX_description.sql`
+8. Mettre à jour `docs/features.md` et `docs/api.md`
+9. Si nouvelle variable d'environnement requise → l'ajouter dans `REQUIRED_VARS` dans `backend/src/config/env.ts`
 
 ## Tests — Règles obligatoires
 
 ### Principe — TDD obligatoire
-**Les tests unitaires sont écrits AVANT le code d'implémentation.** Un agent dédié est lancé pour rédiger les specs (`*.spec.ts`) sur la base du plan architectural, avant qu'un seul fichier de service soit créé.
+**Les tests unitaires sont écrits AVANT le code d'implémentation.** Les specs (`*.spec.ts`) sont rédigées sur la base du plan validé, avant qu'un seul fichier de service soit créé.
 
-> **Ordre impératif** : plan validé → agent tests → tests écrits → agent implémentation → code
+> **Ordre impératif** : plan validé → tests écrits → implémentation
 
 Pas de feature sans tests. Pas de code avant les tests.
 
@@ -156,37 +145,19 @@ docker compose exec backend npm run test:watch
 - Langage : TypeScript (backend)
 - Gestionnaire de paquets : npm
 
-> **Règle absolue** : toutes les installations de packages se font **dans le conteneur Docker**, jamais sur la machine hôte.
-> ```bash
-> # Backend
-> docker compose exec backend npm install <package>
->
-> # Mobile — toujours utiliser expo install (résout les versions compatibles avec le SDK Expo)
-> docker compose exec mobile npx expo install <package>
-> docker compose exec mobile npx expo install --check
-> ```
+**Règles d'installation de packages :**
+- Jamais sur la machine hôte — toujours dans le conteneur
+- Jamais éditer `package.json` manuellement pour les versions
 
-> **Règle absolue (mobile)** : ne jamais utiliser `npm install` pour le mobile. Toujours passer par `make mobile-install` qui installe ET vérifie la compatibilité automatiquement.
-> ```bash
-> # Installer un package mobile — commande unique obligatoire
-> make mobile-install pkg=<package>
-> # Équivalent à :
-> # docker compose exec mobile npx expo install <package>
-> # docker compose exec mobile npx expo install --check
-> ```
+```bash
+# Backend
+docker compose exec backend npm install <package>
+docker compose exec backend npm install <package>@latest   # forcer la dernière version
+docker compose exec backend npx npm-check-updates -u && docker compose exec backend npm install  # tout mettre à jour
 
-> **Règle absolue** : ne jamais éditer `package.json` manuellement pour ajouter ou modifier une version. Toujours utiliser `npm install` qui résout et inscrit automatiquement la dernière version compatible.
-> ```bash
-> # Installer un package (dernière version compatible)
-> docker compose exec backend npm install <package>
->
-> # Forcer la toute dernière version
-> docker compose exec backend npm install <package>@latest
->
-> # Mettre à jour TOUS les packages à la dernière version (majeure incluse)
-> docker compose exec backend npx npm-check-updates -u
-> docker compose exec backend npm install
-> ```
+# Mobile — toujours expo install (résout la compatibilité SDK automatiquement)
+make mobile-install pkg=<package>
+```
 
 ## Commandes utiles (à compléter)
 ```bash
@@ -202,6 +173,15 @@ docker compose exec backend npm run migrate
 # Seed
 docker compose exec backend npm run seed
 ```
+
+## Format de réponse API
+
+- Retourner l'objet directement — pas de wrapper `{ data: ..., success: true }`
+- Création (`@Post`) → retourner l'objet créé (201 automatique)
+- Suppression (`@Delete`) → retourner `void` (204 automatique)
+- Listes → retourner le tableau directement
+
+> **Règle** : ne jamais exposer `password`, `refreshToken`, `providerId` dans une réponse. Toujours sélectionner les colonnes explicitement en SQL.
 
 ## Sécurité — Règle fondamentale
 
@@ -229,6 +209,7 @@ docker compose exec backend npm run seed
 - Sur-ingéniérer — garder les solutions simples
 - Créer des fichiers inutiles
 - **Commencer à coder sans avoir présenté un plan précis et reçu la validation explicite de rcini-ha**
+- **Modifier le schéma DB sans créer un fichier de migration** — toute modification de schéma = nouveau fichier `db/migrations/XXX_description.sql`
 
 ## Règle obligatoire avant tout code
 
@@ -244,8 +225,7 @@ docker compose exec backend npm run seed
 
 ### Règles importantes
 - **Toujours lire `docs/` avant de coder** — réutiliser les fonctions et modules existants, ne jamais créer de doublon.
-- Avant d'implémenter quoi que ce soit, explorer le codebase avec un agent Explore pour vérifier si ça existe déjà.
-- Avant de coder une feature, mettre à jour le fichier `docs/` correspondant. Après validation, coder. Jamais l'inverse.
+- Avant d'implémenter, explorer le codebase (agent Explore si module inconnu) pour vérifier si ça existe déjà.
 - **Toute fonctionnalité opérationnelle** (testée et fonctionnelle côté backend ET en environnement dev) doit être ajoutée à `docs/features.md` avec son statut ✅.
 
 ### Règle — suivi des features opérationnelles
@@ -272,15 +252,6 @@ Dès qu'une feature est validée fonctionnelle (backend + dev), Claude doit mett
 | Changement d'architecture / schéma DB | `docs/architecture.md` |
 
 > **Ne jamais** clore une tâche d'implémentation sans avoir mis à jour `docs/`. Une feature non documentée n'est pas livrée.
-
-### Ordre obligatoire avant chaque implémentation
-1. Lire `docs/architecture.md` — comprendre les modules et relations
-2. Lire `docs/api.md` — vérifier les endpoints existants
-3. Lire les JSDoc des services existants — réutiliser ce qui existe
-4. Mettre à jour `docs/` si nécessaire
-5. Coder
-6. Écrire les tests
-7. **Mettre à jour `docs/features.md` et `docs/api.md`** — obligatoire avant de terminer
 
 ### Commentaires JSDoc — OBLIGATOIRES
 - **Toutes les méthodes publiques** doivent avoir un commentaire JSDoc complet

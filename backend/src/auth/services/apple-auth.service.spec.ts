@@ -6,7 +6,6 @@
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { AppleAuthService } from './apple-auth.service';
 import { UsersService } from '../../users/users.service';
 import { Provider } from '../../common/types/enums';
@@ -15,7 +14,6 @@ import * as appleSignin from 'apple-signin-auth';
 jest.mock('apple-signin-auth');
 
 const mockUsersService = { findOrCreateOAuth: jest.fn() };
-const mockConfigService = { getOrThrow: jest.fn().mockReturnValue('com.wordevent.app') };
 const mockUser = { id: 'uuid-1', email: 'apple@example.com', name: 'Apple User' };
 
 let service: AppleAuthService;
@@ -27,17 +25,17 @@ function mockValidPayload() {
 
 function setupBeforeEach() {
   beforeEach(async () => {
+    process.env.APPLE_CLIENT_ID = 'com.wordevent.app';
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AppleAuthService,
-        { provide: ConfigService, useValue: mockConfigService },
         { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
 
     service = module.get<AppleAuthService>(AppleAuthService);
     jest.clearAllMocks();
-    mockConfigService.getOrThrow.mockReturnValue('com.wordevent.app');
     verifyMock = appleSignin.verifyIdToken as jest.Mock;
   });
 }

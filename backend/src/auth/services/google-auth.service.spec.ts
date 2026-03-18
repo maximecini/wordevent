@@ -6,7 +6,6 @@
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { GoogleAuthService } from './google-auth.service';
 import { UsersService } from '../../users/users.service';
 import { Provider } from '../../common/types/enums';
@@ -15,7 +14,6 @@ import { OAuth2Client } from 'google-auth-library';
 jest.mock('google-auth-library');
 
 const mockUsersService = { findOrCreateOAuth: jest.fn() };
-const mockConfigService = { getOrThrow: jest.fn().mockReturnValue('mock-google-client-id') };
 const mockUser = { id: 'uuid-1', email: 'google@example.com', name: 'Google User' };
 
 let service: GoogleAuthService;
@@ -26,17 +24,17 @@ function setupBeforeEach() {
     verifyMock = jest.fn();
     (OAuth2Client as unknown as jest.Mock).mockImplementation(() => ({ verifyIdToken: verifyMock }));
 
+    process.env.GOOGLE_CLIENT_ID = 'mock-google-client-id';
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GoogleAuthService,
-        { provide: ConfigService, useValue: mockConfigService },
         { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
 
     service = module.get<GoogleAuthService>(GoogleAuthService);
     jest.clearAllMocks();
-    mockConfigService.getOrThrow.mockReturnValue('mock-google-client-id');
   });
 }
 

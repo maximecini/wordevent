@@ -2,12 +2,11 @@
  * Tests unitaires — AuthService
  * Vérifie la logique d'authentification : validation des identifiants,
  * inscription, connexion et rafraîchissement des tokens JWT.
- * PrismaService, JwtService et ConfigService sont mockés.
+ * UsersService et JwtService sont mockés.
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
@@ -20,7 +19,6 @@ const mockUsersService = {
 };
 
 const mockJwtService = { signAsync: jest.fn().mockResolvedValue('mock-token') };
-const mockConfigService = { get: jest.fn().mockReturnValue('secret') };
 
 const mockUser = {
   id: 'uuid-1',
@@ -39,7 +37,7 @@ function setupBeforeEach() {
         AuthService,
         { provide: UsersService, useValue: mockUsersService },
         { provide: JwtService, useValue: mockJwtService },
-        { provide: ConfigService, useValue: mockConfigService },
+
       ],
     }).compile();
 

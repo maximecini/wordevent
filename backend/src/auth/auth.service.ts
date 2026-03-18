@@ -1,6 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -10,7 +9,6 @@ export class AuthService {
   constructor(
     private readonly users: UsersService,
     private readonly jwt: JwtService,
-    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -73,7 +71,7 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync({ sub: userId }, { expiresIn: '15m' }),
       this.jwt.signAsync({ sub: userId }, {
-        secret: this.config.get('JWT_REFRESH_SECRET'),
+        secret: process.env.JWT_REFRESH_SECRET,
         expiresIn: '7d',
       }),
     ]);

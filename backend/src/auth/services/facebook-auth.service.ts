@@ -1,5 +1,4 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
 import { Provider } from '../../common/types/enums';
 
@@ -20,15 +19,10 @@ interface FacebookMeResponse {
 
 @Injectable()
 export class FacebookAuthService {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly users: UsersService,
-  ) {}
+  constructor(private readonly users: UsersService) {}
 
   private buildAppAccessToken(): string {
-    const appId = this.config.getOrThrow<string>('FACEBOOK_APP_ID');
-    const appSecret = this.config.getOrThrow<string>('FACEBOOK_APP_SECRET');
-    return `${appId}|${appSecret}`;
+    return `${process.env.FACEBOOK_APP_ID}|${process.env.FACEBOOK_APP_SECRET}`;
   }
 
   private async verifyToken(accessToken: string): Promise<string> {
@@ -41,7 +35,7 @@ export class FacebookAuthService {
       throw new UnauthorizedException('Invalid Facebook token');
     }
 
-    const expectedAppId = this.config.getOrThrow<string>('FACEBOOK_APP_ID');
+    const expectedAppId = process.env.FACEBOOK_APP_ID as string;
     if (json.data.app_id !== expectedAppId) {
       throw new UnauthorizedException('Facebook token app mismatch');
     }

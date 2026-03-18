@@ -6,19 +6,11 @@
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { FacebookAuthService } from './facebook-auth.service';
 import { UsersService } from '../../users/users.service';
 import { Provider } from '../../common/types/enums';
 
 const mockUsersService = { findOrCreateOAuth: jest.fn() };
-const mockConfigService = {
-  getOrThrow: jest.fn().mockImplementation((key: string) => {
-    if (key === 'FACEBOOK_APP_ID') return 'mock-app-id';
-    if (key === 'FACEBOOK_APP_SECRET') return 'mock-app-secret';
-    return '';
-  }),
-};
 const mockUser = { id: 'uuid-1', email: 'fb@example.com', name: 'FB User' };
 
 let service: FacebookAuthService;
@@ -45,21 +37,18 @@ function setupBeforeEach() {
     fetchMock = jest.fn();
     global.fetch = fetchMock as unknown as typeof fetch;
 
+    process.env.FACEBOOK_APP_ID = 'mock-app-id';
+    process.env.FACEBOOK_APP_SECRET = 'mock-app-secret';
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FacebookAuthService,
-        { provide: ConfigService, useValue: mockConfigService },
         { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
 
     service = module.get<FacebookAuthService>(FacebookAuthService);
     jest.clearAllMocks();
-    mockConfigService.getOrThrow.mockImplementation((key: string) => {
-      if (key === 'FACEBOOK_APP_ID') return 'mock-app-id';
-      if (key === 'FACEBOOK_APP_SECRET') return 'mock-app-secret';
-      return '';
-    });
   });
 }
 

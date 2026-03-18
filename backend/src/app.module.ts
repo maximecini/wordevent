@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
@@ -14,7 +13,6 @@ import { PlacesOfInterestModule } from './places-of-interest/places-of-interest.
 @Module({
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['secrets/jwt.env', '.env'] }),
     ThrottlerModule.forRoot([
       { name: 'default', ttl: 60000, limit: 300 },
       { name: 'auth', ttl: 60000, limit: 10 },
